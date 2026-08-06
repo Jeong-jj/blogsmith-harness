@@ -40,6 +40,8 @@ workspace/                        dogfooding 작업장, gitignore
 
 ## 커밋과 브랜치
 
+커밋 메시지와 PR 제목 **둘 다** 같은 형식을 쓴다.
+
 ```
 <type>(<scope>): <제목, 한글, 50자 내>
 ```
@@ -47,8 +49,27 @@ workspace/                        dogfooding 작업장, gitignore
 type은 `feat` `fix` `docs` `refactor` `chore` `release`.
 scope는 디렉토리 이름.
 
+PR 제목까지 형식을 지키는 이유는 스쿼시 머지 때문이다.
+PR 제목이 그대로 main의 커밋 제목이 되므로 안 지키면 git log가 깨진다.
+
 작업은 브랜치에서 하고 PR로 머지한다. PR 단위는 완결된 능력 하나다.
 제목에 "그리고"가 들어가면 쪼갠다.
+
+## 머지 정책
+
+**스쿼시 머지만 쓴다.** main에 PR 하나당 커밋 하나가 남는다.
+PR 단위가 완결된 능력 하나이므로 main의 커밋 하나도 능력 하나가 된다.
+되돌릴 때 커밋 하나만 revert 하면 되고 `git bisect`도 능력 단위로 걸린다.
+작업 중의 중간 커밋은 main에 남지 않지만 PR 페이지에 보존되므로 잃는 것이 없다.
+
+**머지한 브랜치는 삭제한다.** GitHub이 커밋을 유지하고 필요하면 복원할 수 있다.
+
+저장소 설정에서 맞춰둘 것:
+
+- Allow squash merging만 켜고 merge commit과 rebase merge는 끈다
+- 스쿼시 커밋 메시지는 `Pull request title and commit details`로 둔다.
+  PR 본문에는 체크리스트와 주석이 섞여 있어 git log에 넣기에 적합하지 않다.
+- Automatically delete head branches를 켠다
 
 ## 개발 중 설치
 
