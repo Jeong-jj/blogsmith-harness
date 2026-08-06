@@ -1,0 +1,20 @@
+{
+  "name": "jj-tools",
+  "description": "JeongJun이 만든 Claude Code 플러그인 모음",
+  "metadata": {
+    "description": "JeongJun이 만든 Claude Code 플러그인 모음"
+  },
+  "owner": {
+    "name": "JeongJun",
+    "url": "https://github.com/Jeong-jj"
+  },
+  "plugins": [
+    {
+      "name": "blogsmith",
+      "source": "./plugins/blogsmith",
+      "description": "블로그 문체를 학습해 저장하고, 사진과 메모를 원천으로 검색 노출에 맞춘 아티클을 씁니다. 네이버, 티스토리, velog 포맷을 지원합니다.",
+      "category": "writing",
+      "tags": ["blog", "seo", "korean", "writing", "naver", "tistory", "velog"]
+    }
+  ]
+}
