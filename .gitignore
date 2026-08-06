@@ -1,0 +1,16 @@
+# 개발 일지 (비공개 중첩 저장소)
+.dev-log/
+
+# dogfooding 작업공간 — 실제 아티클 작업은 여기서, 커밋하지 않음
+workspace/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 에디터
+.idea/
+*.swp
+
+# Claude Code 로컬 설정
+.claude/settings.local.json
