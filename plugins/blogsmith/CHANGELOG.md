@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-문체 학습. 실사용 검증 후 `0.2.0`으로 올린다.
+문체 학습과 검색 노출 지식. 실사용 검증 후 `0.2.0`으로 올린다.
+
+- `naver-seo`, `google-seo`, `geo-aeo` 지식 스킬 추가.
+  셋 다 `user-invocable: false`로 두어 필요할 때 자동으로 참조된다
 
 - `/blogsmith:learn-style` 추가. 블로그 글 URL을 받아 문체를 분석하고
   `styles/<이름>.md`에 규칙 문서로 저장한다
