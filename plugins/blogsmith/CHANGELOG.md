@@ -6,6 +6,9 @@
 
 - `naver-seo`, `google-seo`, `geo-aeo` 지식 스킬 추가.
   셋 다 `user-invocable: false`로 두어 필요할 때 자동으로 참조된다
+- `natural-voice` 지식 스킬 추가.
+  네이버가 자동 생성 패턴이 감지된 문서를 검색결과에서 제외하므로
+  문체 자연스러움이 품질이 아니라 생존 조건이다
 
 - `/blogsmith:learn-style` 추가. 블로그 글 URL을 받아 문체를 분석하고
   `styles/<이름>.md`에 규칙 문서로 저장한다
