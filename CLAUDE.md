@@ -105,7 +105,23 @@ git config rebase.autoStash true # 미커밋 변경을 자동으로 넣었다 �
 리베이스는 커밋 해시를 다시 만들므로 푸시할 때 강제 푸시가 필요하다.
 반드시 `--force-with-lease`를 쓴다. 그냥 `--force`는 원격의 다른 변경을 말없이 덮는다.
 
-저장소 설정에서 맞춰둘 것:
+## 강제 푸시를 언제 하는가
+
+| 상황 | 방식 |
+|---|---|
+| PR 열기 전 | `--amend`로 커밋을 합쳐도 된다 |
+| PR 연 후 | 커밋을 새로 쌓는다. amend 하지 않는다 |
+| main과 뒤처짐 | 리베이스 후 `--force-with-lease` |
+
+PR이 열린 뒤 amend 하고 강제 푸시하면 PR에 force-pushed 기록이 남고
+그 시점까지의 리뷰 흐름이 끊긴다. 고칠 것이 있으면 커밋을 하나 더 쌓는다.
+어차피 스쿼시 머지라 main에는 커밋 하나로 남는다.
+
+리베이스는 예외다. main을 따라가려면 강제 푸시 말고 방법이 없다.
+
+## 저장소 설정
+
+맞춰둘 것:
 
 - Allow squash merging만 켜고 merge commit과 rebase merge는 끈다
 - 스쿼시 커밋 메시지는 `Pull request title and commit details`로 둔다.
