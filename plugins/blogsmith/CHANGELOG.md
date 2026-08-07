@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+문체 학습. 실사용 검증 후 `0.2.0`으로 올린다.
+
+- `/blogsmith:learn-style` 추가. 블로그 글 URL을 받아 문체를 분석하고
+  `styles/<이름>.md`에 규칙 문서로 저장한다
+- `style-analyst` 서브에이전트 추가. 글 본문이 메인 대화로 들어오지 않도록
+  격리된 컨텍스트에서 읽고 요약만 돌려준다
+- 문체 문서 스키마를 `skills/learn-style/schema.md`에 정의
+
 ## 0.1.0
 
 플러그인 골격과 작업공간 초기화.
