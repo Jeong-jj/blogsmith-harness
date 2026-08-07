@@ -64,6 +64,31 @@ PR 단위가 완결된 능력 하나이므로 main의 커밋 하나도 능력 �
 
 **머지한 브랜치는 삭제한다.** GitHub이 커밋을 유지하고 필요하면 복원할 수 있다.
 
+## main 최신화는 리베이스
+
+작업 브랜치가 main보다 뒤처졌을 때 **머지하지 않고 리베이스한다.**
+머지하면 브랜치에 머지 커밋이 남고, 스쿼시할 때 그 잡음까지 커밋 메시지에 들어간다.
+
+```bash
+git checkout main && git pull
+git checkout <작업 브랜치>
+git rebase main
+git push --force-with-lease
+```
+
+충돌이 나면 그 자리에서 해결하고 `git rebase --continue`로 넘어간다.
+포기하려면 `git rebase --abort`.
+
+저장소에 다음이 설정돼 있어 `git pull`이 항상 리베이스로 동작한다.
+
+```bash
+git config pull.rebase true      # merge 대신 rebase
+git config rebase.autoStash true # 미커밋 변경을 자동으로 넣었다 뺀다
+```
+
+리베이스는 커밋 해시를 다시 만들므로 푸시할 때 강제 푸시가 필요하다.
+반드시 `--force-with-lease`를 쓴다. 그냥 `--force`는 원격의 다른 변경을 말없이 덮는다.
+
 저장소 설정에서 맞춰둘 것:
 
 - Allow squash merging만 켜고 merge commit과 rebase merge는 끈다
