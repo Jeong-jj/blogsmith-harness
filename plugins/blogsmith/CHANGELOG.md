@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.2.0
+## Unreleased
 
-문체 학습.
+문체 학습. 실사용 검증 후 `0.2.0`으로 올린다.
 
 - `/blogsmith:learn-style` 추가. 블로그 글 URL을 받아 문체를 분석하고
   `styles/<이름>.md`에 규칙 문서로 저장한다
