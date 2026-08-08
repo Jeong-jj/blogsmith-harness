@@ -1,7 +1,0 @@
-# 원천 자료는 개인 자료라 커밋하지 않습니다.
-# README와 형식 예시만 남깁니다.
-*
-!.gitignore
-!README.md
-!_sample/
-!_sample/**
