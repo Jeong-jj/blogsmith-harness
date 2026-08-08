@@ -1,18 +1,43 @@
 ---
 description: 블로그 글 URL 여러 개를 읽어 문체를 분석하고 styles/ 에 규칙 문서로 저장한다
 disable-model-invocation: true
-argument-hint: "<url> [url ...] [--name <스타일 이름>]"
-allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *)
+argument-hint: "<url> [url ...] [--name <이름>] [--workspace <경로>]"
+allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *), Bash(${CLAUDE_SKILL_DIR}/scripts/find-workspace.sh *)
 ---
 
 # 문체 학습
 
-`$ARGUMENTS`에서 URL 목록과 `--name` 값을 뽑는다.
+`$ARGUMENTS`에서 URL 목록과 `--name`, `--workspace` 값을 뽑는다.
+
+## 작업공간 찾기
+
+먼저 작업공간을 정한다. `blog.config.json`이 있는 디렉토리다.
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/find-workspace.sh "<--workspace 값, 없으면 생략>"
+```
+
+`--workspace`를 주면 그 경로를 쓰고, 없으면 현재 디렉토리부터 위로 거슬러 찾는다.
+git이 `.git`을 찾는 방식과 같다. 사용자가 `sources/` 안에서 실행해도 찾아낸다.
+
+**출력된 절대 경로를 이후 모든 경로의 기준으로 삼는다.**
+`styles/<이름>.md`는 `<작업공간>/styles/<이름>.md`를 뜻한다.
+
+스크립트가 1을 반환하면 중단하고 `/blogsmith:init`을 먼저 실행하라고 안내한다.
+사유가 표준 오류로 나오니 그대로 전달한다.
+
+## 경로 처리
+
+사용자 폴더 이름에 띄어쓰기가 들어갈 수 있다. `2026-08-03 성수동 카페` 같은 식이다.
+
+**셸 명령에서 경로는 항상 따옴표로 감싼다.** 감싸지 않으면 띄어쓰기에서 인자가 쪼개져
+엉뚱한 경로를 만들거나 실패한다. 괄호와 앰퍼샌드도 같은 문제를 일으킨다.
+
+```bash
+ls "<작업공간>/styles"
+```
 
 ## 입력 확인
-
-**작업공간.** 현재 디렉토리에 `blog.config.json`이 없으면 중단하고
-`/blogsmith:init`을 먼저 실행하라고 안내한다.
 
 **URL 개수.** 개별 글 주소를 받는다. 블로그 메인 주소가 아니다.
 
@@ -21,7 +46,7 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *)
 - 6편을 넘으면 앞의 6편만 쓴다. 더 읽어도 정확도가 눈에 띄게 오르지 않는다.
 
 **이름.** `--name`이 없으면 사용자에게 묻는다. 파일명이 되므로 영문 소문자와 하이픈으로 받는다.
-`styles/<이름>.md`가 이미 있으면 덮어쓸지 확인한다.
+`<작업공간>/styles/<이름>.md`가 이미 있으면 덮어쓸지 확인한다.
 
 ## 분석
 
@@ -31,8 +56,10 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *)
 프롬프트에 넣을 것:
 
 - URL 목록 전부
-- `styles/_raw/<이름>/`이 있으면 그 안의 파일 경로도 함께 (본문을 직접 넣은 경우)
-- 저장 경로 `styles/<이름>.md`
+- `<작업공간>/styles/_raw/<이름>/`이 있으면 그 안의 파일 경로도 함께
+  (본문을 직접 넣은 경우)
+- 저장 경로. **절대 경로로 준다.** `<작업공간>/styles/<이름>.md`
+  서브에이전트는 자기 작업 디렉토리를 따로 가지므로 상대 경로를 주면 엉뚱한 곳에 쓴다
 - `schema.md`의 내용 (`${CLAUDE_SKILL_DIR}/schema.md`를 읽어서 그대로 전달)
 
 에이전트가 파일을 직접 쓰고 요약만 돌려준다.
@@ -55,7 +82,7 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *)
 - 문체 세 줄 요약
 - 표본 부족으로 보류한 항목
 
-기본 스타일로 지정할지 묻는다. 원하면 `blog.config.json`의 `defaultStyle`에 이름을 넣는다.
+기본 문체로 지정할지 묻는다. 원하면 `<작업공간>/blog.config.json`의 `defaultStyle`에 이름을 넣는다.
 
 ## 실패 처리
 
@@ -66,7 +93,7 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *)
 
 이때는 사용자에게 두 가지를 제안한다.
 
-- 브라우저에서 글을 열어 본문을 복사해 `styles/_raw/<이름>/01.txt` 같은 파일로 저장하고 다시 실행
+- 브라우저에서 글을 열어 본문을 복사해 `<작업공간>/styles/_raw/<이름>/01.txt` 같은 파일로 저장하고 다시 실행
 - 다른 플랫폼의 글로 시도
 
 ## 참고
