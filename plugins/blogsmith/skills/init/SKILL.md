@@ -35,20 +35,46 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cp *), Bash(find *)
 
 ```
 <대상>/
-├── blog.config.json     기본 스타일과 플랫폼 설정
-├── .gitignore
+├── blog.config.json     기본 문체, 플랫폼, 사진 처리 방식
 ├── sources/             입력: 사진과 메모
 │   ├── README.md
-│   └── _sample/         입력 형식 예시
+│   └── _sample/         입력 형식 예시. 지워도 된다
 ├── styles/              학습한 문체 문서
 └── output/              완성 아티클
 ```
 
 ## 안내할 다음 단계
 
-- `sources/_sample/notes.md`를 열어 입력 형식을 확인한다
-- 참고할 블로그 주소를 모아 `/blogsmith:learn-style`로 문체를 학습한다
-- `blog.config.json`에서 `defaultStyle`과 `defaultPlatform`을 지정한다
+사용자가 개발자가 아닐 수 있다. 구체적으로 안내한다.
+
+**1. 문체를 학습한다.** 닮고 싶은 블로그 글 주소를 5개 모아 실행한다.
+
+```
+/blogsmith:learn-style <주소1> <주소2> ... --name 내문체
+```
+
+**2. 글감 폴더를 만든다.** `sources/` 안에 폴더를 하나 만들고
+사진과 `notes.md`를 넣는다. 폴더 이름은 자유이고 띄어쓰기도 된다.
+날짜를 앞에 붙이면 정렬이 편하다.
+
+```
+sources/2026-08-03 성수동 카페/
+├── notes.md
+├── 01_외관_간판작음.jpg
+└── 02_2층창가.jpg
+```
+
+**사진 파일명이 아티클에 쓰인다**고 알려준다.
+`IMG_4821.jpg`보다 `01_외관_간판작음.jpg`가 낫다.
+아이폰 사진(`.HEIC`)은 그대로 둬도 blogsmith가 변환한다.
+
+**3. 형식을 확인한다.** `sources/_sample/notes.md`에 채워진 예시가 있다.
+
+**4. 기본값을 정한다.** `blog.config.json`에서 `defaultStyle`과 `defaultPlatform`을 지정하면
+글 쓸 때마다 옵션을 안 줘도 된다.
+
+사진은 blogsmith가 블로그에 올리지 못한다는 것도 함께 알린다.
+자리와 캡션만 만들어 주고 업로드는 사용자가 에디터에서 한다.
 
 ## 주의
 
