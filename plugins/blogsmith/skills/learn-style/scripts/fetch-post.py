@@ -19,8 +19,14 @@
   [LIST] 목록 항목
   [CARD] 링크 카드나 지도
 
-네이버는 WebFetch 로 접근할 수 없어 curl 로 받는다.
-본문이 iframe 안이라 PostView.naver 주소로 바꿔 요청한다.
+## 신분을 밝히고 받는다
+
+브라우저인 척하지 않는다. blogsmith 라고 밝히고 저장소 주소를 함께 보낸다.
+받아주면 쓰고, 막으면 물러난다. 판단 기준을 단순하게 두려는 것이다.
+
+플랫폼별 방침은 같은 디렉토리의 domains.md 에 정리해 뒀다.
+
+네이버는 본문이 iframe 안이라 PostView.naver 주소로 바꿔 요청한다.
 """
 import html
 import re
@@ -28,7 +34,7 @@ import subprocess
 import sys
 from urllib.parse import urlparse, parse_qs
 
-UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+UA = "blogsmith/0.1 (+https://github.com/Jeong-jj/blogsmith-harness)"
 
 
 def to_fetchable(url):
@@ -71,7 +77,7 @@ def main_container(doc):
 def clean(s):
     s = re.sub(r"<[^>]+>", " ", s)
     s = html.unescape(s).replace("​", "")
-    return re.sub(r"[ \t ]+", " ", s).strip()
+    return re.sub(r"\s+", " ", s).strip()
 
 
 def extract(doc):
