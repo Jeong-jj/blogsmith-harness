@@ -18,7 +18,14 @@ output/
 ```
 
 지원 값은 `markdown`, `naver`, `tistory`, `velog`입니다.
-`blog.config.json`의 `defaultPlatform`으로 기본값을 정할 수 있습니다.
+
+지정하지 않으면 이 순서로 정해집니다.
+
+1. `blog.config.json`의 `defaultPlatform`
+2. 쓰는 문체가 학습된 플랫폼
+
+네이버 글을 배운 문체로 쓰면 네이버 형식이 나옵니다.
+매번 같은 곳에 쓰신다면 `defaultPlatform`에 적어두세요.
 
 ## 사진은 직접 올리셔야 합니다
 
