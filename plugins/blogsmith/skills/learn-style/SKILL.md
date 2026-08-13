@@ -2,7 +2,7 @@
 description: 블로그 글 URL 여러 개를 읽어 문체를 분석하고 styles/ 에 규칙 문서로 저장한다
 disable-model-invocation: true
 argument-hint: "<url> [url ...] [--name <이름>] [--workspace <경로>]"
-allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *), Bash(${CLAUDE_SKILL_DIR}/scripts/find-workspace.sh *)
+allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *), Bash(${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh *)
 ---
 
 # 문체 학습
@@ -14,7 +14,7 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cat *), Bash(${CLAU
 먼저 작업공간을 정한다. `blog.config.json`이 있는 디렉토리다.
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/find-workspace.sh "<--workspace 값, 없으면 생략>"
+${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh "<--workspace 값, 없으면 생략>"
 ```
 
 `--workspace`를 주면 그 경로를 쓰고, 없으면 현재 디렉토리부터 위로 거슬러 찾는다.
