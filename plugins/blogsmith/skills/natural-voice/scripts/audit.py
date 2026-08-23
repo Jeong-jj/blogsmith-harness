@@ -3,161 +3,144 @@
 
   python3 audit.py article.md [article2.md ...]
 
-문체 문서(styles/)가 정하는 것은 검사하지 않는다.
-이모지, 종결어미, 존댓말 여부는 사람마다 다르므로 여기서 판정할 수 없다.
-이 스크립트가 보는 것은 문체와 무관하게 AI 티가 나는 지점이다.
+전처리와 문장 통계, 어디서나 통하는 절대 규칙과 금지 어휘는 `_core.py`에 있다.
+글 종류를 가리지 않는 계산부라 여기서 고치지 않는다.
+
+이 파일에는 블로그에만 해당하는 것을 둔다.
+문체 문서(styles/)가 정하는 것은 판정하지 않는다.
+종결어미, 존댓말, 이모지는 사람마다 다르므로 여기서 옳고 그름을 가릴 수 없다.
 """
+import os
 import re
 import sys
-import statistics
 
-# 문장 길이 편차. 구조 다양성(burstiness)이 가장 크게 갈리는 지표다.
-CV_MIN = 0.35        # 변동계수(표준편차/평균) 하한
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _core as core
+
+# 임계값은 코어에 박지 않고 여기서 넘긴다.
+# 블로그에 맞춰 조정할 값이라 계산부가 아니라 판정부에 있어야 한다.
+CV_MIN = 0.35        # 문장 길이 변동계수(표준편차/평균) 하한
 RATIO_MIN = 3.0      # 최장 문장 / 최단 문장
-
-EMDASH_PER_1000 = 1.0
 BOLD_RATIO_MAX = 12.0
 
-BANNED = {
-    "번역투": r"(에 대한|에 있어서|을 통해|를 통해|로 인해|되어지|하게 되었)",
-    "헤지": r"(라고 할 수 있|인 것 같습니다|로 보입니다|하는 듯합니다)",
-    "공허한 부사": r"(성공적으로|효과적으로|효율적으로|체계적으로|적극적으로|지속적으로)",
-    "부풀리기": r"(놀라운|완벽한|최고의|강력한|혁신적|획기적|압도적|무려)",
-    "얼버무린 출처": r"(일반적으로|대부분의 경우|흔히 |전문가들은|알려져 있)",
-    "서두 상투구": r"(살펴보겠습니다|알아보겠습니다|소개해 ?드리겠습니다)",
-    "마무리 상투구": r"(결론적으로|정리하자면|마무리하며|이상으로)",
-    "뻔한 수식": r"(맛있는 (?:커피|음식)|아늑한 분위기|친절한 직원|가성비가 좋)",
-}
+# 절대 규칙 중 문체 문서의 소관인 것. 위반으로 세지 않고 보고만 한다.
+# 이모지를 쓸지 말지는 그 사람의 문체다. 종결 분포와 같은 이유로 여기서 판정하지 않는다.
+HARD_REPORT_ONLY = {"장식 이모지"}
 
-DENSITY = {
-    "~뿐만 아니라": (r"(?:뿐(?:만)? 아니라|에 그치지 않)", 1),
-    "대조 구문 (X가 아니라 Y)": (r"(?:가|이|은|는|을|를)\s*아니(?:라|고|며)", 2),
-    "문두 접속사": (r"(?m)^\s*(?:[-*>]\s*)?(?:그리고|그러나|또한|하지만|따라서|즉|한편)[ ,]", 3),
-}
+# 코어 목록에 블로그 리뷰 표현만 더한다.
+BANNED = dict(core.BANNED)
+BANNED["뻔한 수식"] = r"(맛있는 (?:커피|음식)|아늑한 분위기|친절한 직원|가성비가 좋)"
+
+# 문두 접속사는 블로그에서만 밀도로 다룬다. 구어체라 여유를 둔다. 의도된 차이다.
+DENSITY = dict(core.DENSITY)
+DENSITY["문두 접속사"] = (
+    r"(?m)^\s*(?:[-*>]\s*)?(?:그리고|그러나|또한|하지만|따라서|즉|한편)[ ,]", 3)
+
+# 대제목으로 본 인용블록의 길이 상한. 학습한 문체의 관찰값이 5~26자였다.
+HEADING_MAX = 45
 
 
-def strip_code(text):
-    """코드블록과 인라인 코드를 뺀다.
+def quoted_line(q):
+    """인용블록 한 줄이 남의 말인가.
 
-    인라인 코드는 산문이 아니라 표기 대상이다.
-    금지 패턴을 설명하는 문서에서 `—` 같은 예시를 위반으로 세면 안 된다.
+    블로그에서 `>` 는 남의 말이라는 보장이 없다. 네이버 인용 컴포넌트가
+    대제목으로 쓰이고 속마음을 감싸기도 한다. 그래서 기호가 아니라 모양으로 가른다.
+
+    남의 말은 문장이라 종결어미와 마침표로 닫힌다.
+    대제목은 명사구나 의문문이라 마침표로 닫지 않는다.
     """
-    text = re.sub(r"```.*?```", " ", text, flags=re.S)
-    return re.sub(r"`[^`\n]*`", " ", text)
+    return (q.startswith("출처:")
+            or q.endswith(".")
+            or bool(re.search(r"(?:습니다|입니다|이다|한다|했다|이에요|예요)\.?$", q))
+            or len(q) > HEADING_MAX)
 
 
-def strip_meta(text):
-    """표, 코드, HTML, 헤딩, 이미지, 링크 URL 을 뺀 산문."""
-    text = strip_code(text)
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", text)
-    text = re.sub(r"\]\([^)]*\)", "] ", text)
-    lines = [l for l in text.split("\n")
-             if not l.lstrip().startswith(("|", "#", "---", "==="))]
-    return "\n".join(lines)
-
-
-def sentences(prose):
-    """문장 단위로 쪼갠다. 목록 항목은 문장으로 세지 않는다."""
-    out = []
-    for line in prose.split("\n"):
-        s = line.strip()
-        if not s or s.startswith(("-", "*", ">", "|")):
-            continue
-        for seg in re.split(r"(?<=[.!?])\s+", s):
-            seg = re.sub(r"[*_`]", "", seg).strip()
-            if len(seg) >= 8:
-                out.append(seg)
-    return out
-
-
-def check_burstiness(sents):
-    """문장 길이가 고르면 AI 신호다. 사람은 짧게 끊었다가 길게 쓴다."""
-    if len(sents) < 5:
-        return [], "문장 5개 미만이라 판정하지 않음"
-    lens = [len(s) for s in sents]
-    mean = statistics.mean(lens)
-    cv = statistics.pstdev(lens) / mean if mean else 0
-    ratio = max(lens) / min(lens)
-    problems = []
-    if cv < CV_MIN:
-        problems.append(f"[편차] 문장 길이 변동계수 {cv:.2f} (하한 {CV_MIN})")
-    if ratio < RATIO_MIN:
-        problems.append(f"[편차] 최장/최단 비율 {ratio:.1f}배 (하한 {RATIO_MIN}배)")
-    detail = (f"평균 {mean:.0f}자, 변동계수 {cv:.2f}, "
-              f"최단 {min(lens)}자 최장 {max(lens)}자 ({ratio:.1f}배)")
-    return problems, detail
-
-
-def check_list_sizes(raw):
-    """목록 항목 수가 전부 3개면 AI 신호다."""
-    sizes, cur = [], 0
-    for line in raw.split("\n") + [""]:
-        if re.match(r"^\s*(?:[-*]|\d+\.)\s+\S", line):
-            cur += 1
-        else:
-            if cur:
-                sizes.append(cur)
-            cur = 0
-    if len(sizes) >= 3 and len(set(sizes)) == 1 and sizes[0] == 3:
-        return [f"[구조] 목록 {len(sizes)}개가 전부 3항목"], sizes
-    return [], sizes
-
-
-def check_concreteness(prose):
-    """숫자와 고유명사가 없는 문단은 추상적이다. 예측 용이성이 높아진다."""
-    empty, total = [], 0
-    for para in re.split(r"\n\s*\n", prose):
-        p = para.strip()
-        if len(p) < 60 or p.startswith(("-", "*", ">", "|")):
-            continue
-        total += 1
-        if not re.search(r"[0-9]|[A-Za-z]{2,}", p):
-            empty.append(p[:50])
-    return empty, total
+def split_blockquotes(prose):
+    """(남의 말 줄을 뺀 글, 뺀 줄 목록). 판정을 화면에 찍어 눈에 보이게 한다."""
+    keep, theirs = [], []
+    for ln in prose.split("\n"):
+        s = ln.lstrip()
+        if s.startswith(">"):
+            q = s.lstrip("> ").strip()
+            if q and quoted_line(q):
+                theirs.append(q)
+                continue
+        keep.append(ln)
+    return "\n".join(keep), theirs
 
 
 def audit(path):
+    """검사마다 보는 범위가 다르다. 넷을 만들어 두고 골라 쓴다.
+
+    raw        파일 그대로. 절대 규칙과 목록 구조가 쓴다.
+               em dash 는 인용 안에 있어도 위반이다. 붙여넣은 것 자체가 증거다.
+    prose      표, 코드, 헤딩, 링크를 뺀 것. 서식 검사가 쓴다.
+    body       인용블록까지 뺀 것. 문단 단위 판정인 구체성이 쓴다.
+    own_words  큰따옴표 대사를 뺀 것. 줄 단위로 훑는 어휘와 밀도가 쓴다.
+
+    **블로그에서 `>` 는 남의 말이라는 보장이 없다.** 네이버 인용 컴포넌트가
+    대제목으로 쓰이고 속마음을 인용으로 감싸기도 한다. 학습해 둔 문체에서도
+    인용 블록 대부분이 대제목이었고 진짜 인용은 5편 통틀어 1건이었다.
+
+    그래서 기호로 자르지 않고 `quoted_line` 이 모양을 보고 가른다.
+    통째로 빼면 대제목에 넣은 상투구가 면제되고, 통째로 남기면 진짜 인용이
+    오탐으로 잡힌다. 둘 다 피하려면 줄마다 판정해야 한다.
+
+    판정 결과는 화면에 찍는다. 휴리스틱이라 틀릴 수 있는데,
+    무엇을 뺐는지 보이지 않으면 조용히 면제되는 것과 같아진다.
+
+    구체성은 인용블록을 전부 뺀다. 문단 단위 판정이라 대제목은 60자 문턱에
+    걸리지 않고, 남의 말을 옮긴 문단에서 숫자를 빌려오면 안 되기 때문이다.
+    """
     raw = open(path, encoding="utf-8").read()
-    prose = strip_meta(raw)
-    sents = sentences(prose)
+    prose = core.strip_meta(raw)
+    body = core.prose_only(raw)
+    kept, theirs = split_blockquotes(prose)
+    own_words = core.drop_quoted(kept)
+
+    sents = core.sentences(body)
     problems = []
 
     print(f"\n{'=' * 66}\n{path}\n{'=' * 66}")
 
-    probs, detail = check_burstiness(sents)
+    probs, detail = core.check_burstiness(sents, CV_MIN, RATIO_MIN)
     problems += probs
     print(f"  {'[X]' if probs else '[o]'} 구조 다양성{'':<12} {detail}")
 
-    chars = len(re.sub(r"\s", "", prose)) or 1
+    # 밀도 배수는 실제로 훑는 분량으로 잰다. 훑지 않는 대사까지 분모에 넣으면
+    # 배수만 커지고 범위는 그대로라 상한이 헐거워진다. 분자와 분모가 같은 글이어야 한다.
+    scale = core.density_scale(own_words)
+    chars = len(re.sub(r"\s", "", own_words)) or 1
+    print(f"  [ ] 분량{'':<17} {chars}자 (남의 말 제외)  밀도 상한 배수 x{scale}")
 
-    n = len(re.findall(r"[—–]", strip_code(raw)))
-    per1000 = n / chars * 1000
-    if per1000 > EMDASH_PER_1000:
-        problems.append(f"[서식] em dash {n}건 (1000자당 {per1000:.1f})")
-        print(f"  [X] em dash{'':<17} {n}건  1000자당 {per1000:.1f}  상한 {EMDASH_PER_1000}")
-    elif n:
-        print(f"  [!] em dash{'':<17} {n}건")
+    if theirs:
+        print(f"  [ ] 인용 판정{'':<13} {len(theirs)}줄을 남의 말로 보고 어휘·밀도에서 제외")
+        for q in theirs[:2]:
+            print(f"        {q[:52]}")
 
-    # 줄 맨 앞 굵게는 항목 라벨이라 산문 강조로 세지 않는다.
-    emph = []
-    for ln in prose.split("\n"):
-        s = ln.strip()
-        for m in re.finditer(r"\*\*(.+?)\*\*", s):
-            if s[:m.start()].strip(" -·*>0123456789."):
-                emph.append(m.group(1))
-    ratio = len(re.sub(r"\s", "", "".join(emph))) / chars * 100
+    for name, n in core.hard_hits(raw):
+        if name in HARD_REPORT_ONLY:
+            print(f"  [ ] {name:<20} {n}건  (문체 문서가 정함)")
+            continue
+        problems.append(f"[서식] {name} {n}건")
+        print(f"  [X] {name:<20} {n}건  1건이라도 있으면 위반")
+
+    # 굵게는 prose 로 잰다. 인용 안의 굵게도 필자가 넣은 서식이기 때문이다.
+    # 인용문을 가져올 때 굵게까지 그대로 옮기는 사람은 없다. 강조는 옮긴 사람이 한다.
+    ratio, emph, _label, _chars = core.bold_ratio(prose)
     if ratio > BOLD_RATIO_MAX:
         problems.append(f"[서식] 문중 굵게 {ratio:.1f}% (상한 {BOLD_RATIO_MAX}%)")
     print(f"  {'[X]' if ratio > BOLD_RATIO_MAX else '[o]'} 굵게 밀도{'':<14} "
           f"{ratio:4.1f}%  (문중 {len(emph)}개)  상한 {BOLD_RATIO_MAX}%")
 
-    probs, sizes = check_list_sizes(raw)
+    probs, sizes = core.check_list_sizes(raw)
     problems += probs
     if sizes:
         print(f"  {'[X]' if probs else '[o]'} 목록 항목 수{'':<11} {sizes}")
 
-    empty, total = check_concreteness(prose)
+    # 구체성은 필자가 쓴 산문에 검증 가능한 요소가 있는지를 묻는다.
+    # 남의 말을 옮긴 부분에서 숫자를 빌려오면 안 된다.
+    empty, total = core.check_concreteness(body)
     if empty:
         problems.append(f"[구체성] 숫자와 고유명사가 없는 문단 {len(empty)}/{total}건")
         print(f"  [X] 구체성{'':<16} {len(empty)}/{total} 문단에 숫자와 고유명사 없음")
@@ -166,21 +149,25 @@ def audit(path):
     elif total:
         print(f"  [o] 구체성{'':<16} {total} 문단 모두 검증 가능한 요소 있음")
 
+    # 금지 어휘에서 대사만 뺀다. 잡히면 고치라는 뜻인데 남의 말은 고칠 수 없고
+    # 다듬으면 오인용이 된다. 인용블록은 남긴다. 위 독스트링의 이유다.
     for name, pat in BANNED.items():
-        found = re.findall(pat, prose)
+        found = re.findall(pat, own_words)
         if found:
             problems.append(f"[어휘] {name} {len(found)}건")
             print(f"  [X] {name:<20} {len(found)}건  {sorted(set(map(str, found)))[:4]}")
 
     for name, (pat, cap) in DENSITY.items():
-        n = len(re.findall(pat, prose))
-        if n > cap:
-            problems.append(f"[밀도] {name} {n}건 (상한 {cap})")
-            print(f"  [X] {name:<20} {n}건  상한 {cap}")
+        n = len(re.findall(pat, own_words))
+        lim = cap * scale
+        if n > lim:
+            problems.append(f"[밀도] {name} {n}건 (상한 {lim})")
+            print(f"  [X] {name:<20} {n}건  상한 {cap}x{scale}={lim}")
 
     # 종결 분포는 보고만 한다. 판정은 문체 문서가 할 몫이다.
-    hon = len(re.findall(r"(?:습니다|입니다|해요|예요|네요)[.\s]*$", prose, re.M))
-    pla = len(re.findall(r"(?:했다|한다|된다|이다|없다|같다)[.\s]*$", prose, re.M))
+    # 인용 안의 어미는 화자의 말이라 필자의 종결로 세지 않는다.
+    hon = len(re.findall(r"(?:습니다|입니다|해요|예요|네요)[.\s]*$", own_words, re.M))
+    pla = len(re.findall(r"(?:했다|한다|된다|이다|없다|같다)[.\s]*$", own_words, re.M))
     if hon or pla:
         print(f"  [ ] 종결 분포{'':<13} 존댓말 {hon} / 평서 {pla}  (문체 문서가 정함)")
 
