@@ -6,9 +6,13 @@
 출력은 탭으로 나눈 줄이다.
 
   version<탭><설정 번호><탭><템플릿 번호>
+  notation<탭><설정에 적힌 그대로>
   missing<탭><키><탭><기본값 JSON>
 
-`version` 줄은 항상 낸다. `missing` 줄은 빠진 키마다 하나씩이고 없으면 안 낸다.
+`version` 줄은 항상 낸다. 번호는 `x.y.z` 로 정규화한 값이다.
+`notation` 줄은 설정에 적힌 값이 `x.y.z` 문자열이 아닐 때만 낸다.
+정수 `1` 이나 키가 아예 없는 경우다. 번호가 같아도 표기는 맞춰야 하므로 따로 알린다.
+`missing` 줄은 빠진 키마다 하나씩이고 없으면 안 낸다.
 
 번호는 `x.y.z` 다. 자리마다 뜻이 있어 숫자만 보고 무엇이 바뀌었는지 알 수 있다.
 major 는 키 이름이나 값의 의미가 바뀐 것이고 옛 설정을 그대로 못 쓴다.
@@ -35,6 +39,14 @@ def load(path, label):
     if not isinstance(data, dict):
         sys.exit(f"{label}이 객체가 아니다: {path}")
     return data
+
+
+def canonical(raw):
+    """설정에 적힌 값이 이미 `x.y.z` 문자열인가."""
+    if not isinstance(raw, str):
+        return False
+    parts = raw.split(".")
+    return len(parts) == 3 and all(p.isdigit() for p in parts)
 
 
 def parse_version(raw, label):
@@ -66,9 +78,14 @@ if __name__ == "__main__":
     target = load(sys.argv[2], "작업공간 설정")
 
     tpl_v = parse_version(template.get("version"), "템플릿 설정")
-    cfg_v = parse_version(target.get("version"), "작업공간 설정")
+    raw = target.get("version")
+    cfg_v = parse_version(raw, "작업공간 설정")
     print("version\t{}\t{}".format(".".join(map(str, cfg_v)),
                                    ".".join(map(str, tpl_v))))
+
+    # 번호가 같아도 표기가 옛것이면 남는다. 그 사실을 따로 알린다.
+    if not canonical(raw):
+        print("notation\t{}".format("(없음)" if raw is None else json.dumps(raw, ensure_ascii=False)))
 
     # version 은 빼고 센다. 번호를 올리는 것은 변환을 다 돌린 뒤에 할 일이다.
     # 사용자가 직접 넣은 키는 내지 않는다. 지울 대상이 아니다.
