@@ -16,6 +16,8 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cp *), Bash(find *)
 
 2. 대상 디렉토리에 `blog.config.json`이 이미 있는지 확인한다.
    있으면 **아무것도 하지 않고** 이미 초기화된 작업공간이라고 알린 뒤 종료한다.
+   설정 형식이 낡았을 수 있으니 `/blogsmith:update`를 함께 안내한다.
+   여기서 설정을 고치지 않는다. 만드는 명령이 파일을 고치면 이름과 동작이 어긋난다.
 
 3. 대상 디렉토리가 없으면 만든다.
 
