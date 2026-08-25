@@ -12,7 +12,9 @@
 
   [H1] 대제목
   [H2] 소제목
-  [P] 문단 한 줄
+  [P] 문단 첫 줄
+  [P-] 같은 문단의 이어지는 줄
+  [BR] 문단 안의 빈 줄
   [IMG] 사진 (캡션: ...)
   [HR] 구분선
   [QUOTE] 인용
@@ -100,6 +102,41 @@ def clean(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+BOLD = r"<(b|strong)\b|font-weight:\s*bold"
+
+
+def text_lines(c):
+    """텍스트 컴포넌트를 눈에 보이는 줄 단위로 쪼갠다.
+
+    스마트에디터 ONE 은 화면의 한 줄이 se-text-paragraph 하나다.
+    줄 정보가 개행 문자가 아니라 태그에 들어 있어서,
+    clean() 이 태그를 지우기 전에 여기서 먼저 갈라야 한다.
+
+    빈 p 는 엔터 두 번이다. 문단 안에서 덩어리를 나누는 간격이라 버리지 않는다.
+    굵게는 줄마다 따로 본다. 한 문단의 앞 절반만 굵은 경우가 흔하다.
+    """
+    parts = re.findall(
+        r'<p[^>]*class="[^"]*(?<![\w-])se-text-paragraph(?![\w-])[^"]*"[^>]*>(.*?)</p>',
+        c, re.S | re.I)
+    if not parts:
+        parts = re.findall(r"<p\b[^>]*>(.*?)</p>", c, re.S | re.I)
+    if not parts:
+        parts = [c]
+
+    # p 안의 br 도 줄이다. 네이버는 한 줄이 p 하나지만 마크다운 계열은
+    # 한 문단이 p 하나고 그 안을 br 로 끊는다. 여기서 갈라야 양쪽이 같아진다.
+    lines = []
+    for x in parts:
+        pieces = [(clean(y), bool(re.search(BOLD, y, re.I)))
+                  for y in re.split(r"<br\s*/?>", x, flags=re.I)]
+        # 통째로 빈 p 는 빈 줄 하나다. br 로 갈라 둘로 세지 않는다.
+        if any(t for t, _ in pieces):
+            lines.extend(pieces)
+        else:
+            lines.append(("", any(b for _, b in pieces)))
+    return lines
+
+
 def extract(doc):
     body = main_container(doc)
     body = re.sub(r"<(script|style)\b.*?</\1>", " ", body, flags=re.S | re.I)
@@ -111,7 +148,10 @@ def extract(doc):
     # 앞 조각이 img 없이 클래스만 남아 [IMG x1] 유령을 만든다.
     chunks = re.split(
         r'(?=<div[^>]*class="[^"]*(?<![\w-])se-component(?![\w-])[^"]*")', body)
-    if len(chunks) < 3:
+    # 컴포넌트가 하나도 없을 때만 물러난다. 네이버가 아닌 HTML 이다.
+    # 하나라도 잡혔으면 그것이 문단이다. 조각 수로 재면 컴포넌트 하나짜리 글이
+    # 폴백으로 빠져 se-text-paragraph 하나하나가 문단으로 잡힌다.
+    if len(chunks) < 2:
         chunks = re.split(r"(?=<(?:p|h[1-6]|hr|blockquote|figure|table)\b)",
                           body, flags=re.I)
 
@@ -162,14 +202,21 @@ def extract(doc):
                     out.append(f"[LIST] {t[:200]}")
             continue
 
-        text = clean(c)
-        if not text:
+        if not clean(c):
             continue
-        # 굵게 표시가 있으면 남긴다. 볼드 사용 습관도 문체다.
-        if re.search(r"<(b|strong)\b|font-weight:\s*bold", low):
-            out.append(f"[P*] {text}")
-        else:
-            out.append(f"[P] {text}")
+        # 줄 단위로 낸다. 한 문장을 두 줄로 자르는 습관이 문체의 핵심이라
+        # 문단으로 뭉치면 그 습관이 통째로 사라진다.
+        block = []
+        for text, bold in text_lines(c):
+            if not text:
+                if block:               # 문단 앞머리의 빈 줄은 버린다
+                    block.append("[BR]")
+                continue
+            tag = "[P*" if bold else "[P"
+            block.append(f"{tag}{'' if not block else '-'}] {text}")
+        while block and block[-1] == "[BR]":
+            block.pop()                 # 문단 끝의 빈 줄도 버린다
+        out.extend(block)
     return out
 
 
