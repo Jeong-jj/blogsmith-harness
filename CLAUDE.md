@@ -145,3 +145,15 @@ PR이 열린 뒤 amend 하고 강제 푸시하면 PR에 force-pushed 기록이 �
 /plugin marketplace add ./
 /plugin install blogsmith@jj-tools
 ```
+
+**스킬을 고쳤으면 세션을 재시작하고 검증한다.**
+플러그인 본문은 세션 시작 시점으로 고정된다. 파일을 고쳐도 그 세션에서는 옛 내용이 실행된다.
+재시작 없이 검증하면 고치기 전 코드를 검증하게 되고, 통과해도 아무것도 증명하지 못한다.
+
+디스크와 세션이 어긋났는지는 이렇게 본다.
+
+```bash
+grep -n "<방금 고친 문구>" plugins/blogsmith/skills/<이름>/SKILL.md
+```
+
+디스크에만 있고 로드된 본문에 없으면 재시작 전이다.
