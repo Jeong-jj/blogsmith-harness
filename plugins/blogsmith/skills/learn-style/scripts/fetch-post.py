@@ -18,6 +18,7 @@
   [QUOTE] 인용
   [LIST] 목록 항목
   [CARD] 링크 카드나 지도
+  [STICKER] 스티커
 
 ## 신분을 밝히고 받는다
 
@@ -63,14 +64,33 @@ def fetch(url):
     return r.stdout
 
 
+def close_of(doc, start):
+    """start 위치에서 열린 div 의 짝이 되는 </div> 앞까지의 끝 위치를 준다.
+
+    `(.*)` 로 잡으면 문서 끝까지 딸려온다. 본문 뒤의 CCL 고지, 태그 입력란,
+    공감 버튼이 전부 본문으로 세어져서 사진 수와 문단 수가 부풀었다.
+    """
+    depth = 0
+    for m in re.finditer(r"<div\b|</div\s*>", doc[start:], re.I):
+        if m.group(0)[1] != "/":
+            depth += 1
+        else:
+            depth -= 1
+            if depth == 0:
+                return start + m.start()
+    return len(doc)
+
+
 def main_container(doc):
     """본문 영역만 남긴다. 못 찾으면 전체를 쓴다."""
-    for pat in (r'<div[^>]*class="[^"]*se-main-container[^"]*"[^>]*>(.*)',
-                r'<div[^>]*id="postViewArea"[^>]*>(.*)',
-                r'<article[^>]*>(.*?)</article>'):
-        m = re.search(pat, doc, re.S | re.I)
+    for pat in (r'<div[^>]*class="[^"]*se-main-container[^"]*"[^>]*>',
+                r'<div[^>]*id="postViewArea"[^>]*>'):
+        m = re.search(pat, doc, re.I)
         if m:
-            return m.group(1)
+            return doc[m.end():close_of(doc, m.start())]
+    m = re.search(r'<article[^>]*>(.*?)</article>', doc, re.S | re.I)
+    if m:
+        return m.group(1)
     return doc
 
 
@@ -86,7 +106,11 @@ def extract(doc):
 
     out = []
     # 컴포넌트 단위로 자른다. 스마트에디터는 se-component 로 문단을 감싼다.
-    chunks = re.split(r'(?=<div[^>]*class="[^"]*se-component[^"]*")', body)
+    # se-component 를 정확히 그 클래스 이름일 때만 잡는다.
+    # 경계가 없으면 안쪽의 se-component-content 에도 걸려 컴포넌트가 둘로 잘리고,
+    # 앞 조각이 img 없이 클래스만 남아 [IMG x1] 유령을 만든다.
+    chunks = re.split(
+        r'(?=<div[^>]*class="[^"]*(?<![\w-])se-component(?![\w-])[^"]*")', body)
     if len(chunks) < 3:
         chunks = re.split(r"(?=<(?:p|h[1-6]|hr|blockquote|figure|table)\b)",
                           body, flags=re.I)
@@ -115,6 +139,14 @@ def extract(doc):
                 continue    # 중첩 요소를 두 번 세지 않는다
             out.append("[HR]")
             continue
+        if "se-sticker" in low:
+            out.append("[STICKER]")
+            continue
+        # 카드를 이미지보다 먼저 본다. 링크 카드와 지도 카드가 썸네일 img 를
+        # 품고 있어서 순서가 반대면 전부 사진으로 세어진다.
+        if re.search(r"se-oglink|se-map|se-placesmap|se-mapinfo", low):
+            out.append(f"[CARD] {clean(c)[:80]}")
+            continue
         if re.search(r"se-image|<img\b|<figure\b", low):
             n = len(re.findall(r"<img\b", low))
             cap = ""
@@ -122,9 +154,6 @@ def extract(doc):
             if m:
                 cap = clean(m.group(1))
             out.append(f"[IMG x{max(n,1)}]" + (f" (캡션: {cap})" if cap else ""))
-            continue
-        if "se-oglink" in low or "se-map" in low or "se-placesMap" in low:
-            out.append(f"[CARD] {clean(c)[:80]}")
             continue
         if re.search(r"<li\b", low):
             for li in re.findall(r"<li\b[^>]*>(.*?)</li>", c, re.S | re.I):
