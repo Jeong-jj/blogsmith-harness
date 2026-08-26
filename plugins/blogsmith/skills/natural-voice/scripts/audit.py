@@ -143,12 +143,13 @@ def audit(path):
     empty, total = core.check_concreteness(body)
     if empty:
         problems.append(f"[구체성] 숫자와 고유명사가 없는 문단 {len(empty)}/{total}건")
-        print(f"  [X] 구체성{'':<16} {len(empty)}/{total} 문단에 숫자와 고유명사 없음")
+        print(f"  [X] 구체성{'':<16} {len(empty)}/{total} 단위에 숫자와 로마자 없음"
+              f"  (짧은 덩어리는 이어붙여 셈)")
         for e in empty[:3]:
             print(f"        {e}...")
         print("        한글 고유명사는 못 센다. 고치기 전에 읽고 거른다")
     elif total:
-        print(f"  [o] 구체성{'':<16} {total} 문단 모두 검증 가능한 요소 있음")
+        print(f"  [o] 구체성{'':<16} {total} 단위 모두 검증 가능한 요소 있음")
 
     # 금지 어휘에서 대사만 뺀다. 잡히면 고치라는 뜻인데 남의 말은 고칠 수 없고
     # 다듬으면 오인용이 된다. 인용블록은 남긴다. 위 독스트링의 이유다.

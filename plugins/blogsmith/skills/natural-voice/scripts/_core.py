@@ -182,7 +182,10 @@ def bold_ratio(body):
 
 
 # 화제가 바뀌는 자리. 여기서 이어붙이기를 끊는다.
-BLOCK_START = ("-", "*", ">", "|", "#", "!")
+# `[` 는 `[지도]` 같은 자리표시와 링크 참조다. 산문이 아니다.
+BLOCK_START = ("-", "*", ">", "|", "#", "!", "[")
+
+BARE_URL = re.compile(r"https?://\S+")
 
 
 def check_concreteness(body, floor=60):
@@ -207,8 +210,11 @@ def check_concreteness(body, floor=60):
     9건이 많은지 적은지가 전체 수에 달렸기 때문이고, 호출부가 분모를 따로
     세면 여기 거르는 기준과 어긋난다.
 
-    **한글 고유명사는 여전히 못 센다.** `고든램지` 가 든 단위가 비어 있다고 잡힌다.
+    **한글 고유명사는 못 센다.** `고든램지` 가 든 단위가 비어 있다고 잡힌다.
     사전 없이는 일반 명사와 갈리지 않는다. 에이전트가 결과를 읽고 거른다.
+
+    맨 URL 은 지운다. 링크는 검증 가능한 값이 아닌데 그 안의 숫자와 로마자가
+    통과 근거로 쓰인다. `strip_meta` 가 마크다운 링크만 빼서 맨 URL 이 남는다.
     """
     empty, total, buf = [], 0, []
 
@@ -226,6 +232,7 @@ def check_concreteness(body, floor=60):
 
     for para in re.split(r"\n\s*\n", body):
         p = " ".join(l.strip() for l in para.strip().split("\n") if l.strip())
+        p = BARE_URL.sub(" ", p).strip()
         if not p:
             continue
         if p.startswith(BLOCK_START):
