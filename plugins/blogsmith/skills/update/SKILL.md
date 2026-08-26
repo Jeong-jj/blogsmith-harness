@@ -1,16 +1,28 @@
 ---
-description: 작업공간 설정을 플러그인 최신 형식에 맞춘다. blog.config.json 의 빠진 항목을 채우고 바뀐 형식을 옮긴다
+description: 작업공간을 플러그인 최신 상태에 맞춘다. blog.config.json 의 빠진 항목을 채우고 낡은 안내문을 최신으로 덮는다
 disable-model-invocation: true
 argument-hint: "[--workspace <경로>]"
-allowed-tools: Bash(cat *), Bash(${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/config-diff.py *)
+allowed-tools: Bash(cat *), Bash(${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/config-diff.py *), Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/template-diff.py *)
 ---
 
-# 설정 형식 갱신
+# 작업공간 갱신
 
 `$ARGUMENTS`에서 `--workspace` 값을 뽑는다.
 
-`init`은 작업공간마다 한 번만 돈다. 그런데 설정 항목은 시간이 지나면서 늘어난다.
-그 뒤에 추가된 키는 기존 작업공간에 영영 안 들어온다. 그 틈을 여기서 메운다.
+`init`은 작업공간마다 한 번만 돈다. 그런데 플러그인은 계속 바뀐다.
+그 뒤에 늘어난 설정 키도, 고쳐진 안내문도 기존 작업공간에 영영 안 들어온다.
+그 틈을 여기서 메운다.
+
+**둘은 성격이 다르다.**
+
+| | `blog.config.json` | 안내문 |
+|---|---|---|
+| 누구 것인가 | 사용자가 값을 정한다 | blogsmith 가 제공한다 |
+| 견주는 단위 | 키 하나씩 | 파일 통째로 |
+| 사용자가 고쳤으면 | 지킨다 | 덮는다 |
+
+안내문은 읽고 이해할 문서지 쓸 문서가 아니다.
+낡은 채로 두면 없는 동작을 약속하거나 새로 생긴 표기를 안 알려준다.
 
 ## 1. 작업공간 찾기
 
@@ -29,6 +41,8 @@ ${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh "<--workspace 값, 없으면
 **출력된 절대 경로를 기준으로 삼는다.** 경로는 항상 따옴표로 감싼다.
 
 ## 2. 차이 재기
+
+### 설정
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/config-diff.py" \
@@ -55,9 +69,28 @@ extra<탭><키><탭><설정에 든 값 JSON>
 사유를 표준 오류로 내고 1을 반환한다. **그때는 고치려 들지 말고 사유를 그대로 전달한다.**
 깨진 파일 위에 쓰면 남은 것까지 잃는다.
 
+### 안내문
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/template-diff.py" \
+  "${CLAUDE_SKILL_DIR}/../init/template" \
+  "<작업공간>"
+```
+
+```
+stale<탭><상대 경로>      내용이 다르다
+missing<탭><상대 경로>    작업공간에 없다
+```
+
+`blog.config.json`은 보지 않는다. 위에서 이미 견줬다.
+낡았다고 판정만 하고 고치지는 않는다. 덮는 것은 8번에서 확인받는다.
+
 ## 3. 번호 견주기
 
-**설정이 템플릿과 같으면** 최신이라고 알리고 끝낸다.
+**설정 번호가 같고 안내문도 같으면** 최신이라고 알리고 끝낸다.
+**번호가 같아도 `stale`이나 `missing`이 있으면 끝내지 않는다.**
+안내문은 형식 번호를 매기는 대상이 아니라 내용으로 견주기 때문이다.
+
 다만 `notation`이 나왔으면 표기만 어긋난 것이다.
 번호는 맞고 적힌 모양이 옛것이므로 `x.y.z`로 맞출지 묻는다.
 표기가 섞여 있으면 나중에 사람이 읽을 때 형식이 둘인 줄 안다.
@@ -111,9 +144,16 @@ extra<탭><키><탭><설정에 든 값 JSON>
 **반드시 5번 다음이다.** 순서가 뒤바뀌면 이름이 바뀐 키를 기본값으로 먼저 채워서
 옛 값을 잃는다.
 
-## 7. 번호 올리기
+## 7. 번호 올리기와 안내문 덮기
 
 `version`을 템플릿 값으로 맞춘다.
+
+`stale`과 `missing`으로 나온 안내문을 템플릿 내용으로 덮는다.
+`missing`이면 디렉토리를 만들어 새로 넣는다.
+
+**통째로 덮는다.** 사용자가 고친 곳을 살리려 들지 않는다.
+안내문은 하네스가 제공하는 문서라 사용자가 고칠 자리가 아니고,
+문서마다 머리에 그 사실이 적혀 있다.
 
 ## 8. 확인받고 저장
 
@@ -128,8 +168,17 @@ blog.config.json 을 이렇게 바꿉니다.
 
   defaultStyle 은 "casual-review" 그대로 둡니다.
 
+안내문 3개를 최신으로 덮습니다.
+
+  sources/README.md         낡음
+  sources/_sample/notes.md  낡음
+  styles/README.md          없음. 새로 넣습니다
+
 진행할까요?
 ```
+
+**설정과 안내문을 한 화면에 놓고 한 번만 묻는다.** 나눠 물으면 마찰이 두 배다.
+설정에 바꿀 것이 없고 안내문만 낡았어도 이 화면은 뜬다.
 
 **지우는 키는 왜 지우는지 함께 보여준다.** 어느 형식에서 빠졌는지 적는다.
 사용자가 그 값을 쓰고 있었다면 여기서 막을 수 있어야 한다.
@@ -147,12 +196,17 @@ blog.config.json 을 이렇게 바꿉니다.
   다만 마이그레이션 기록에 `항목 제거`로 적힌 키는 형식에서 뺀 것이므로 지울 후보다.
   기록이 없으면 사용자가 넣은 것으로 본다
 - **묻지 않고 고치지 않는다.** 일부러 지운 키일 수 있다
-- 이 스킬은 `blog.config.json`만 본다.
-  폴더가 지워졌거나 안내용 README가 낡은 것은 다루지 않는다
+- **안내문은 통째로 덮는다.** 사용자가 고친 곳을 살리려 들지 않는다.
+  하네스가 제공하는 문서지 사용자가 쓰는 문서가 아니다
+- 이 스킬은 `blog.config.json`과 `init` 템플릿이 만드는 안내문만 본다.
+  사용자가 만든 글감 폴더나 문체 문서는 다루지 않는다
 
 ## 개발자가 형식을 바꿀 때
 
 템플릿을 고치고, `version`을 올리고, [migrations.md](migrations.md)에 기록을 남긴다.
 셋을 함께 한다. 번호만 올리고 기록을 빠뜨리면 `update`가 4번에서 멈춘다.
+
+**안내문만 고칠 때는 번호를 올리지 않는다.** `version`은 설정 형식의 번호다.
+안내문은 내용으로 견주므로 고치면 다음 `update`가 알아서 덮는다.
 
 자리를 고르는 기준과 기록 형식은 `migrations.md` 머리말에 있다.

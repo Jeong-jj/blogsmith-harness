@@ -1,5 +1,9 @@
 # styles
 
+> 이 문서는 blogsmith 가 제공하는 안내입니다.
+> 고쳐도 `/blogsmith:update` 가 최신 내용으로 덮어씁니다.
+> 적어둘 것이 있으면 `notes.md` 나 별도 파일에 쓰세요.
+
 학습한 문체 문서가 저장되는 곳입니다.
 
 `/blogsmith:learn-style`에 블로그 글 주소를 주면 그 글들을 읽고
