@@ -8,11 +8,15 @@
   version<탭><설정 번호><탭><템플릿 번호>
   notation<탭><설정에 적힌 그대로>
   missing<탭><키><탭><기본값 JSON>
+  extra<탭><키><탭><설정에 든 값 JSON>
 
 `version` 줄은 항상 낸다. 번호는 `x.y.z` 로 정규화한 값이다.
 `notation` 줄은 설정에 적힌 값이 `x.y.z` 문자열이 아닐 때만 낸다.
 정수 `1` 이나 키가 아예 없는 경우다. 번호가 같아도 표기는 맞춰야 하므로 따로 알린다.
 `missing` 줄은 빠진 키마다 하나씩이고 없으면 안 낸다.
+`extra` 줄은 템플릿에 없는데 설정에 있는 키다. **지우라는 뜻이 아니다.**
+형식에서 빠진 것인지 사용자가 직접 넣은 것인지 여기서는 갈리지 않는다.
+`migrations.md` 의 `항목 제거` 기록이 그 답을 갖고 있고 `update` 가 맞대어 본다.
 
 번호는 `x.y.z` 다. 자리마다 뜻이 있어 숫자만 보고 무엇이 바뀌었는지 알 수 있다.
 major 는 키 이름이나 값의 의미가 바뀐 것이고 옛 설정을 그대로 못 쓴다.
@@ -88,7 +92,13 @@ if __name__ == "__main__":
         print("notation\t{}".format("(없음)" if raw is None else json.dumps(raw, ensure_ascii=False)))
 
     # version 은 빼고 센다. 번호를 올리는 것은 변환을 다 돌린 뒤에 할 일이다.
-    # 사용자가 직접 넣은 키는 내지 않는다. 지울 대상이 아니다.
     for key, default in template.items():
         if key != "version" and key not in target:
             print(f"missing\t{key}\t{json.dumps(default, ensure_ascii=False)}")
+
+    # 템플릿에 없는 키를 낸다. 판정은 하지 않는다.
+    # 형식에서 뺀 키와 사용자가 넣은 키를 파일만 봐서는 가를 수 없다.
+    # 마이그레이션 기록을 아는 쪽이 판단한다.
+    for key, value in target.items():
+        if key != "version" and key not in template:
+            print(f"extra\t{key}\t{json.dumps(value, ensure_ascii=False)}")
