@@ -181,25 +181,67 @@ def bold_ratio(body):
     return len(re.sub(r"\s", "", "".join(emph))) / chars * 100, emph, label, chars
 
 
-def check_concreteness(body):
+# 화제가 바뀌는 자리. 여기서 이어붙이기를 끊는다.
+# `[` 는 `[지도]` 같은 자리표시와 링크 참조다. 산문이 아니다.
+BLOCK_START = ("-", "*", ">", "|", "#", "!", "[")
+
+BARE_URL = re.compile(r"https?://\S+")
+
+
+def check_concreteness(body, floor=60):
     """숫자도 고유명사도 없는 문단은 비어 있다. 예측 가능한 말만 남는다.
 
-    영문은 **2글자부터** 센다. QR · PG · UI · DB · AI · PR 처럼 두 글자 약어가
-    검증 가능한 고유명사다. 3글자로 잡으면 이것들이 든 정상 문단을 빈 문단으로
-    오판한다. 한국어 산문에서 라틴 문자 두 글자가 연속하면 거의 용어다.
+    영문은 **한 글자부터** 센다. `M` `O` 같은 사이즈 표기와 등급, 모델명이
+    한 글자로 온다. 한국어 산문에서 단독 라틴 문자는 대개 그런 값이다.
+    두 글자로 잡으면 `M은 미디엄, O는 오리지널이다` 가 빈 문단으로 잡힌다.
 
-    반환값은 (비어 있는 문단 목록, 검사 대상 문단 수)다. 분모를 함께 주는 이유는
-    9건이 많은지 적은지가 전체 문단 수에 달렸기 때문이고, 호출부가 분모를 따로
+    **빈 줄로 갈린 덩어리를 그대로 문단으로 보지 않는다.**
+    문단 안을 빈 줄로 다시 나누는 문체가 있다. 그런 글은 덩어리가 1~2줄이라
+    거의 전부가 문턱 아래로 떨어져 검사가 비어버린다.
+    실제 산출물에서 덩어리 37개 중 33개가 검사 밖이었다.
+
+    그래서 짧은 덩어리를 문턱에 닿을 때까지 이어붙여 한 단위로 본다.
+    소제목, 사진, 구분선, 목록, 표를 만나면 거기서 끊는다.
+
+    **문턱을 낮추는 것과 다르다.** 낮추면 `안쪽은 바삭하고 바깥은 부드럽다` 같은
+    짧은 감각 묘사가 단독으로 걸려 오탐이 쏟아진다. 이어붙이면 앞뒤와 함께 판정된다.
+
+    반환값은 (비어 있는 단위 목록, 검사 대상 수)다. 분모를 함께 주는 이유는
+    9건이 많은지 적은지가 전체 수에 달렸기 때문이고, 호출부가 분모를 따로
     세면 여기 거르는 기준과 어긋난다.
+
+    **한글 고유명사는 못 센다.** `고든램지` 가 든 단위가 비어 있다고 잡힌다.
+    사전 없이는 일반 명사와 갈리지 않는다. 에이전트가 결과를 읽고 거른다.
+
+    맨 URL 은 지운다. 링크는 검증 가능한 값이 아닌데 그 안의 숫자와 로마자가
+    통과 근거로 쓰인다. `strip_meta` 가 마크다운 링크만 빼서 맨 URL 이 남는다.
     """
-    empty, total = [], 0
-    for para in re.split(r"\n\s*\n", body):
-        p = para.strip()
-        if len(p) < 60 or p.startswith(("-", "*", ">", "|")):
-            continue
+    empty, total, buf = [], 0, []
+
+    def close():
+        nonlocal total
+        if not buf:
+            return
+        unit = " ".join(buf)
+        buf.clear()
+        if len(unit) < floor:
+            return
         total += 1
-        if not re.search(r"[0-9]|[A-Za-z]{2,}", p):
-            empty.append(p[:60])
+        if not re.search(r"[0-9]|[A-Za-z]", unit):
+            empty.append(unit[:60])
+
+    for para in re.split(r"\n\s*\n", body):
+        p = " ".join(l.strip() for l in para.strip().split("\n") if l.strip())
+        p = BARE_URL.sub(" ", p).strip()
+        if not p:
+            continue
+        if p.startswith(BLOCK_START):
+            close()
+            continue
+        buf.append(p)
+        if len(" ".join(buf)) >= floor:
+            close()
+    close()
     return empty, total
 
 

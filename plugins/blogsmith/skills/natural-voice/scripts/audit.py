@@ -89,8 +89,8 @@ def audit(path):
     판정 결과는 화면에 찍는다. 휴리스틱이라 틀릴 수 있는데,
     무엇을 뺐는지 보이지 않으면 조용히 면제되는 것과 같아진다.
 
-    구체성은 인용블록을 전부 뺀다. 문단 단위 판정이라 대제목은 60자 문턱에
-    걸리지 않고, 남의 말을 옮긴 문단에서 숫자를 빌려오면 안 되기 때문이다.
+    구체성은 인용블록을 전부 뺀다. 남의 말을 옮긴 문단에서 숫자를 빌려오면 안 된다.
+    소제목과 사진과 구분선은 `check_concreteness` 가 이어붙이기를 끊는 자리로 쓴다.
     """
     raw = open(path, encoding="utf-8").read()
     prose = core.strip_meta(raw)
@@ -143,11 +143,13 @@ def audit(path):
     empty, total = core.check_concreteness(body)
     if empty:
         problems.append(f"[구체성] 숫자와 고유명사가 없는 문단 {len(empty)}/{total}건")
-        print(f"  [X] 구체성{'':<16} {len(empty)}/{total} 문단에 숫자와 고유명사 없음")
+        print(f"  [X] 구체성{'':<16} {len(empty)}/{total} 단위에 숫자와 로마자 없음"
+              f"  (짧은 덩어리는 이어붙여 셈)")
         for e in empty[:3]:
             print(f"        {e}...")
+        print("        한글 고유명사는 못 센다. 고치기 전에 읽고 거른다")
     elif total:
-        print(f"  [o] 구체성{'':<16} {total} 문단 모두 검증 가능한 요소 있음")
+        print(f"  [o] 구체성{'':<16} {total} 단위 모두 검증 가능한 요소 있음")
 
     # 금지 어휘에서 대사만 뺀다. 잡히면 고치라는 뜻인데 남의 말은 고칠 수 없고
     # 다듬으면 오인용이 된다. 인용블록은 남긴다. 위 독스트링의 이유다.
