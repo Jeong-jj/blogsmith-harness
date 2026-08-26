@@ -89,8 +89,8 @@ def audit(path):
     판정 결과는 화면에 찍는다. 휴리스틱이라 틀릴 수 있는데,
     무엇을 뺐는지 보이지 않으면 조용히 면제되는 것과 같아진다.
 
-    구체성은 인용블록을 전부 뺀다. 문단 단위 판정이라 대제목은 60자 문턱에
-    걸리지 않고, 남의 말을 옮긴 문단에서 숫자를 빌려오면 안 되기 때문이다.
+    구체성은 인용블록을 전부 뺀다. 남의 말을 옮긴 문단에서 숫자를 빌려오면 안 된다.
+    소제목과 사진과 구분선은 `check_concreteness` 가 이어붙이기를 끊는 자리로 쓴다.
     """
     raw = open(path, encoding="utf-8").read()
     prose = core.strip_meta(raw)
@@ -146,6 +146,7 @@ def audit(path):
         print(f"  [X] 구체성{'':<16} {len(empty)}/{total} 문단에 숫자와 고유명사 없음")
         for e in empty[:3]:
             print(f"        {e}...")
+        print("        한글 고유명사는 못 센다. 고치기 전에 읽고 거른다")
     elif total:
         print(f"  [o] 구체성{'':<16} {total} 문단 모두 검증 가능한 요소 있음")
 
