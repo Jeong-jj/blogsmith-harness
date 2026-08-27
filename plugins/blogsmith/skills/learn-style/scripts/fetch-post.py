@@ -113,7 +113,10 @@ def close_of(doc, start):
 def main_container(doc):
     """본문 영역만 남긴다. 못 찾으면 전체를 쓴다."""
     for pat in (r'<div[^>]*class="[^"]*se-main-container[^"]*"[^>]*>',
-                r'<div[^>]*id="postViewArea"[^>]*>'):
+                r'<div[^>]*id="postViewArea"[^>]*>',
+                # velog 는 본문 래퍼 클래스가 sc- 로 시작하는 해시라 이름으로 못 잡는다.
+                # 같은 요소에 붙는 atom-one 이 빌드가 바뀌어도 남는다.
+                r'<div[^>]*class="[^"]*(?<![\w-])atom-one(?![\w-])[^"]*"[^>]*>'):
         m = re.search(pat, doc, re.I)
         if m:
             return doc[m.end():close_of(doc, m.start())]
