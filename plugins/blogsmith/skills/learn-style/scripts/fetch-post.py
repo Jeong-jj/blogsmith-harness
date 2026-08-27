@@ -220,7 +220,10 @@ def extract(doc):
         if re.search(r"se-image|<img\b|<figure\b", low):
             n = len(re.findall(r"<img\b", low))
             cap = ""
-            m = re.search(r'class="[^"]*se-caption[^"]*"[^>]*>(.*?)</', c, re.S | re.I)
+            # 네이버는 se-caption, 그 외는 표준 figcaption 이다.
+            # figcaption 은 캡션 말고 다른 뜻이 없어 오탐이 안 난다.
+            m = (re.search(r'class="[^"]*se-caption[^"]*"[^>]*>(.*?)</', c, re.S | re.I)
+                 or re.search(r"<figcaption\b[^>]*>(.*?)</figcaption>", c, re.S | re.I))
             if m:
                 cap = clean(m.group(1))
             out.append(f"[IMG x{max(n,1)}]" + (f" (캡션: {cap})" if cap else ""))
