@@ -65,8 +65,15 @@ velog 한 편   전 9묶음 10장   프로필 사진과 댓글 작성자 썸네�
 
 **velog 에서 캡션 관찰이 0인 것은 결함이 아니다.** 플랫폼에 그 기능이 없다.
 
-티스토리에서 캡션이 붙은 실물은 못 구했다. 공식 공지 블로그 다섯 편이 전부 0이다.
-픽스처로 두 방식을 다 확인했고, 실물 표본이 생기면 다시 본다.
+티스토리 실물로 확인했다. 이미지를 `<span data-url>` 로 감싸는 자체 구조를 쓰면서
+캡션은 표준을 쓴다.
+
+```html
+<figure class="imageblock alignCenter" ...>
+  <span data-url="...kakaocdn.net/..."><img .../></span>
+  <figcaption>리액트 배너</figcaption>
+</figure>
+```
 
 ## 막히는 방식이 플랫폼마다 다르다
 
