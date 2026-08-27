@@ -1,5 +1,6 @@
 {
   "name": "blogsmith",
+  "displayName": "Blogsmith",
   "version": "0.1.0",
   "description": "블로그 문체를 학습해 저장하고, 사진과 메모를 원천으로 검색 노출에 맞춘 아티클을 씁니다. 네이버, 티스토리, velog 포맷을 지원합니다.",
   "author": {
