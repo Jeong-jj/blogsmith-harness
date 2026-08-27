@@ -2,7 +2,7 @@
 description: blogsmith 작업공간을 만든다. 지정한 디렉토리에 sources, styles, output 과 blog.config.json 을 생성한다
 disable-model-invocation: true
 argument-hint: "<대상 디렉토리>"
-allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cp *), Bash(find *)
+allowed-tools: Bash(pwd), Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cp *), Bash(find *)
 ---
 
 # 작업공간 초기화
@@ -13,6 +13,32 @@ allowed-tools: Bash(ls *), Bash(test *), Bash(mkdir *), Bash(cp *), Bash(find *)
 
 1. 인자가 비어 있으면 **현재 디렉토리를 대상으로 삼을지 사용자에게 먼저 확인한다.**
    확인 없이 진행하지 않는다. 답을 받은 뒤 다음으로 넘어간다.
+
+   **경로만 띄우고 묻지 않는다.** 판단할 재료를 함께 낸다.
+
+   ```bash
+   pwd
+   ls -A
+   find . -maxdepth 2 -name blog.config.json -not -path '*/.*'
+   ```
+
+   - **절대 경로.** 어디인지 모르는 채로 답하게 두지 않는다
+   - **무엇이 생기는지.** 폴더 셋과 설정 하나가 그 자리에 얹힌다
+   - **비어 있지 않으면 그 사실.** 원래 있던 것과 섞인다는 게 판단 근거다
+   - **아래 두 단계에 작업공간이 있으면 후보로 함께 낸다.**
+     하네스 소스와 작업공간이 한 저장소에 같이 있는 구조가 흔하다.
+     그때는 현재 디렉토리가 아니라 그쪽이 대상일 가능성이 높다
+
+   ```
+   작업공간을 어디에 만들까요?
+
+     현재 디렉토리   /Users/me/dev/blogsmith-harness
+                    비어 있지 않습니다. sources/ styles/ output/ blog.config.json 이 얹힙니다
+
+     찾은 후보      workspace/   이미 초기화돼 있습니다
+
+   → 현재 디렉토리 / 후보로 지정 / 만들지 않는다
+   ```
 
 2. 대상 디렉토리에 `blog.config.json`이 이미 있는지 확인한다.
    있으면 **아무것도 하지 않고** 이미 초기화된 작업공간이라고 알린 뒤 종료한다.
