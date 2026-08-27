@@ -2,7 +2,7 @@
 description: 사진과 메모를 원천으로 학습한 문체에 맞춰 블로그 아티클을 쓴다
 disable-model-invocation: true
 argument-hint: "<글감 폴더 이름> [--style <이름>] [--platform <플랫폼>] [--workspace <경로>]"
-allowed-tools: Bash(ls *), Bash(mkdir *), Bash(sips *), Bash(${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh *), Bash(python3 ${CLAUDE_SKILL_DIR}/../natural-voice/scripts/audit.py *)
+allowed-tools: Bash(ls *), Bash(mkdir *), Bash(sips *), Bash(command -v *), Bash(${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh *), Bash(python3 ${CLAUDE_SKILL_DIR}/../natural-voice/scripts/audit.py *)
 ---
 
 # 아티클 작성
@@ -138,14 +138,6 @@ imageMode 가 설정에 없어 filename 으로 봅니다. /blogsmith:update 로 
 
 `notes.md` 를 읽고 사진 파일 목록을 만든다.
 
-**`.HEIC` 는 JPG 로 바꾼다.** `Read` 도구가 HEIC 를 이미지로 읽지 못한다.
-
-```bash
-sips -s format jpeg "<원본>.HEIC" --out "<원본>.jpg"
-```
-
-변환본은 원본 옆에 둔다. 원본은 지우지 않는다.
-
 **어느 사진을 열지는 `notes.md` 가 정한다.**
 
 사진 메모에서 `[읽기]` 가 붙은 줄의 파일만 연다.
@@ -169,6 +161,47 @@ sips -s format jpeg "<원본>.HEIC" --out "<원본>.jpg"
 
 **여는 것은 장당 토큰이 크다.** 열 장을 다 열면 본문보다 사진이 더 비싸다.
 그래서 기본이 안 여는 쪽이고 필요한 것만 골라 붙이는 방식이다.
+
+### HEIC 는 열기 전에 JPG 로 바꾼다
+
+`Read` 도구가 `.heic` 를 이미지로 인식하지 못한다. 확장자를 보고 텍스트로 넘기므로
+바이너리가 그대로 쏟아지거나 크기 초과로 거절당한다. 사진 내용을 못 읽는다.
+
+**여는 사진만 바꾼다.** 대상은 위 표가 정한 집합이다.
+`filename` 이면 `[읽기]` 가 붙은 것, `read` 면 전부, `ask` 면 확인받은 것이다.
+안 여는 사진은 파일명만 쓰므로 바꿀 이유가 없다.
+
+```bash
+sips -s format jpeg "<원본>.HEIC" --out "<원본>.jpg"
+```
+
+변환본은 원본 옆에 둔다. **원본은 지우지 않는다.**
+
+**`sips` 는 macOS 에만 있다.** 애플이 만든 형식이라 코덱이 OS 에 들어 있다.
+다른 곳에서는 이 명령이 없으므로 먼저 확인한다.
+
+```bash
+command -v sips
+```
+
+없으면 **바꾸려 들지 말고 알린다.** 열려던 사진을 나열하고 무엇을 할지 묻는다.
+
+```
+이 사진들은 HEIC 라 열지 못합니다.
+자동 변환은 현재 버전에서 macOS 만 가능합니다.
+
+  04_메뉴판.HEIC        메뉴판 가격
+  07_영업시간.HEIC      간판 영업시간
+
+JPG 로 바꿔 같은 폴더에 넣고 다시 실행하면 읽습니다.
+지금 그대로 진행하면 이 사진들의 내용 없이 씁니다.
+
+→ 그대로 진행 / 중단
+```
+
+**묻고 나서 정한다.** 사용자가 `[읽기]` 를 붙인 것은 그 안에 필요한 값이 있다는 뜻이라
+말없이 건너뛰면 그 값이 빠진 채로 글이 나온다.
+그대로 진행하면 무엇을 못 읽었는지 `review.md` 에 적는다.
 
 사진 안에서 읽어낸 값도 소스다. `notes.md` 에 없던 값을 본문에 쓰면
 어디서 왔는지 `review.md` 에 적는다.
