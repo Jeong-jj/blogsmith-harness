@@ -58,12 +58,39 @@ def to_fetchable(url):
     return url
 
 
+# 글 페이지는 og:type 을 article 로 준다. 네이버 velog 티스토리 다 그렇다.
+# 비공개, 삭제, 없는 글, 블로그 메인은 이 값이 없거나 website 다.
+# 플랫폼마다 감싸는 이름을 외우는 것보다 표준 하나를 보는 쪽이 오래 간다.
+OG_ARTICLE = re.compile(
+    r'<meta[^>]+og:type[^>]+content="article"|'
+    r'<meta[^>]+content="article"[^>]+og:type', re.I)
+
+# 잠긴 글은 글 페이지 껍데기로 오므로 og:type 이 article 이다.
+# 본문 자리에 비밀번호 입력칸이 있는 것으로 가른다.
+# 네이버 velog 티스토리 다 로그인을 OAuth 로 넘기므로 글 페이지에 이 칸이 없다.
+LOCKED = re.compile(r'<input[^>]+type="password"', re.I)
+
+
 def fetch(url):
-    r = subprocess.run(["curl", "-sL", "-A", UA, url],
+    """본문 HTML 을 준다. 실패는 사유를 담아 올린다."""
+    r = subprocess.run(["curl", "-sL", "-A", UA, "-w", "\n%{http_code}", url],
                        capture_output=True, text=True, timeout=30)
-    if r.returncode != 0 or len(r.stdout) < 500:
+    if r.returncode != 0:
         raise RuntimeError(f"받지 못했습니다: {url}")
-    return r.stdout
+    doc, _, code = r.stdout.rpartition("\n")
+    # 상태 코드를 안 보면 404 본문을 그대로 파싱한다.
+    # 네이버는 없는 글에도 200 크기의 안내 페이지를 채워 보낸다.
+    if code != "200":
+        raise RuntimeError(f"HTTP {code} 입니다: {url}")
+    if len(doc) < 500:
+        raise RuntimeError(f"받지 못했습니다: {url}")
+    # 비공개 글은 200 으로 온다. 상태 코드만으로는 안 갈린다.
+    if not OG_ARTICLE.search(doc):
+        raise RuntimeError(
+            f"글 페이지가 아닙니다. 비공개거나 삭제된 글이거나 글 주소가 아닙니다: {url}")
+    if LOCKED.search(doc):
+        raise RuntimeError(f"잠긴 글입니다. 비밀번호가 걸려 있습니다: {url}")
+    return doc
 
 
 def close_of(doc, start):
@@ -226,10 +253,17 @@ if __name__ == "__main__":
         sys.exit(1)
     src = sys.argv[1]
     target = to_fetchable(src)
+    try:
+        doc = fetch(target)
+    except RuntimeError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
+    # 머리말은 받고 나서 낸다. 실패했는데 표준 출력에 무언가 나가면
+    # 부르는 쪽이 본문을 받은 것으로 볼 수 있다.
     if target != src:
         print(f"# 원본: {src}")
     print(f"# 요청: {target}\n")
-    lines = extract(fetch(target))
+    lines = extract(doc)
     if len(lines) < 3:
         print("본문을 찾지 못했습니다.", file=sys.stderr)
         sys.exit(1)
