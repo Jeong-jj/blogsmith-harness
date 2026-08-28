@@ -53,14 +53,22 @@ EOF
 if [ $# -gt 0 ]; then
   file_list=$(printf '%s\n' "$@")
 else
-  file_list=$(git ls-files '*.md')
+  file_list=$(git -c core.quotepath=false ls-files '*.md')
 fi
 
 hits=0
+scanned=0
+skipped=0
+missing=0
 while IFS= read -r f; do
   [ -z "$f" ] && continue
-  [ -f "$f" ] || continue
-  skip "$f" && continue
+  if [ ! -f "$f" ]; then
+    say "  파일을 못 찾음: $f"
+    missing=$((missing + 1))
+    continue
+  fi
+  if skip "$f"; then skipped=$((skipped + 1)); continue; fi
+  scanned=$((scanned + 1))
   while IFS=$'\t' read -r name re; do
     [ -z "${re:-}" ] && continue
     while IFS= read -r line; do
@@ -82,17 +90,17 @@ done <<EOF_FILES
 $file_list
 EOF_FILES
 
-if [ "$hits" -gt 0 ]; then
-  say "금지 표현 ${hits}건"
+say "금지 표현 ${hits}건  (검사 ${scanned}개, 제외 ${skipped}개)"
+[ "$hits" -gt 0 ] && fail=1
+if [ "$missing" -gt 0 ]; then
+  say "못 연 파일 ${missing}개"
   fail=1
-else
-  say "금지 표현 없음"
 fi
 
 # ── 2. plugin.json 의 version ───────────────────────────────
 #
 # 빼면 모든 커밋이 사용자에게 전파된다. 있는지만 본다.
-for pj in $(git ls-files '*/plugin.json'); do
+for pj in $(git -c core.quotepath=false ls-files '*/plugin.json'); do
   if grep -q '"version"' "$pj"; then
     say "version 있음  $pj"
   else
@@ -103,7 +111,7 @@ done
 
 # ── 3. SKILL.md 500줄, CLAUDE.md 200줄 ──────────────────────
 over=0
-for f in $(git ls-files '*/SKILL.md'); do
+for f in $(git -c core.quotepath=false ls-files '*/SKILL.md'); do
   n=$(wc -l < "$f" | tr -d ' ')
   if [ "$n" -ge 500 ]; then say "  $f  ${n}줄 (상한 500)"; over=$((over + 1)); fi
 done
