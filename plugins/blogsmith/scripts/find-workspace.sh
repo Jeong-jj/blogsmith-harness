@@ -38,12 +38,18 @@ done
 #
 # **찾아도 고르지 않는다.** 후보만 내고 1 을 반환한다.
 # 추측한 경로에 산출물을 쓰면 엉뚱한 곳에 파일이 생긴다. 고르는 것은 사람 몫이다.
+#
+# **후보는 절대 경로로 낸다.** 상대 경로로 내면 그 값을 --workspace 로 다시 넘기는 쪽의
+# cwd 가 여기와 달라야 할 이유가 없는데도 달라질 수 있고, 그러면
+# "지정한 경로가 없습니다" 로 떨어진다. 낸 값을 그대로 되돌려받을 수 있어야 한다.
 found=$(find . -maxdepth 2 -name blog.config.json -not -path '*/.*' 2>/dev/null | sed 's|/blog.config.json$||;s|^\./||')
 
 if [ -n "$found" ]; then
   echo "작업공간을 찾지 못했습니다. $PWD 부터 위로 올라가며 blog.config.json 을 찾았습니다." >&2
   echo "아래에서 후보를 찾았습니다. --workspace 로 지정하세요." >&2
-  echo "$found" | sed 's|^|  |' >&2
+  printf '%s\n' "$found" | while IFS= read -r d; do
+    echo "  $PWD/$d" >&2
+  done
   exit 1
 fi
 
