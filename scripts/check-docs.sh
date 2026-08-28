@@ -12,7 +12,12 @@ set -uo pipefail
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
 fail=0
-say() { printf '%s\n' "$*" >&2; }
+say() { printf '%s\n' "$*"; }
+
+# 이모지 소제목 검사는 perl 로 돈다. BSD grep 에 -P 가 없어서다.
+# 없으면 그 검사만 못 도는데, 조용히 통과하면 안 본 것을 본 것으로 센다.
+have_perl=1
+command -v perl >/dev/null 2>&1 || have_perl=0
 
 # ── 검사에서 빼는 자리 ───────────────────────────────────────
 #
@@ -34,21 +39,30 @@ skip() {
 #
 # .claude/rules/writing-style.md 의 금지 표 아홉 행을 정규식으로 옮겼다.
 # `이해를 높이는 것` 처럼 예시로만 적힌 것은 그 자리에서 일반화한 형태를 쓴다.
-PATTERNS=$(cat <<'EOF'
-em dash	—
+PATTERNS='em dash	—
 번역투 에 대한	에 대한
 번역투 에 있어서	에 있어서
 번역투 을 통해	[을를] 통해
-번역투 로 인해	[으]?로 인해
+번역투 로 인해	으?로 인해
 단정 회피	라고 할 수 있|하는 것이 중요
 명사화 통한	[을를] 통한
 피동 되어지	되어[지진집]
 피동 여겨지	여겨[지진집]
 과장 형용사	놀라운|강력한|혁신적인|획기적인
 메타 화법	살펴보겠|알아보겠
-마무리 상투구	결론적으로|정리하자면
-EOF
-)
+마무리 상투구	결론적으로|정리하자면'
+
+# 패턴이 비면 검사가 안 도는데 통과로 보인다. 개수를 못 박아 둔다.
+n_pat=0
+while IFS= read -r _l; do
+  [ -n "$_l" ] && n_pat=$((n_pat + 1))
+done <<EOF_COUNT
+$PATTERNS
+EOF_COUNT
+if [ "$n_pat" -ne 12 ]; then
+  say "패턴이 12개여야 하는데 ${n_pat}개다. 검사를 못 돌린다"
+  exit 1
+fi
 
 if [ $# -gt 0 ]; then
   file_list=$(printf '%s\n' "$@")
@@ -80,6 +94,7 @@ while IFS= read -r f; do
   done <<< "$PATTERNS"
 
   # 이모지 소제목. BSD grep 에 -P 가 없어 perl 로 본다
+  [ "$have_perl" = 0 ] && continue
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     say "  $f:${line%%:*}  [이모지 소제목]"
@@ -91,6 +106,9 @@ $file_list
 EOF_FILES
 
 say "금지 표현 ${hits}건  (검사 ${scanned}개, 제외 ${skipped}개)"
+if [ "$have_perl" = 0 ]; then
+  say "perl 이 없어 이모지 소제목 검사를 건너뛰었다. 나머지 열둘만 봤다"
+fi
 [ "$hits" -gt 0 ] && fail=1
 if [ "$missing" -gt 0 ]; then
   say "못 연 파일 ${missing}개"
@@ -100,21 +118,27 @@ fi
 # ── 2. plugin.json 의 version ───────────────────────────────
 #
 # 빼면 모든 커밋이 사용자에게 전파된다. 있는지만 본다.
-for pj in $(git -c core.quotepath=false ls-files '*/plugin.json'); do
+while IFS= read -r pj; do
+  [ -z "$pj" ] && continue
   if grep -q '"version"' "$pj"; then
     say "version 있음  $pj"
   else
     say "version 없음  $pj"
     fail=1
   fi
-done
+done <<EOF_PJ
+$(git -c core.quotepath=false ls-files '*/plugin.json')
+EOF_PJ
 
 # ── 3. SKILL.md 500줄, CLAUDE.md 200줄 ──────────────────────
 over=0
-for f in $(git -c core.quotepath=false ls-files '*/SKILL.md'); do
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
   n=$(wc -l < "$f" | tr -d ' ')
   if [ "$n" -ge 500 ]; then say "  $f  ${n}줄 (상한 500)"; over=$((over + 1)); fi
-done
+done <<EOF_SKILLS
+$(git -c core.quotepath=false ls-files '*/SKILL.md')
+EOF_SKILLS
 [ "$over" -gt 0 ] && fail=1
 say "SKILL.md 상한 초과 ${over}건"
 
