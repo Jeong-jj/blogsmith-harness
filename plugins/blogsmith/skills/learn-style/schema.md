@@ -81,6 +81,7 @@
 name: <스타일 이름>
 sources: <읽은 글 수>
 platform: <학습한 플랫폼. naver / tistory / velog / markdown>
+         <도메인으로 판별된 값이 이 넷에 없으면 그 이름을 그대로 적는다>
 created: <YYYY-MM-DD>
 ---
 
