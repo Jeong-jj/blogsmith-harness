@@ -10,6 +10,9 @@
 # gitignore 대상은 빠진다. workspace/ 와 .dev-log/ 가 그렇다.
 #
 # 종료 코드 0 통과, 1 위반.
+#
+# bash 로 돌린다. 프로세스 치환과 <<< 를 쓰므로 sh 로는 안 된다.
+# sh 는 파일 전체를 먼저 파싱해서 실행 전에 죽으므로 안에서 막을 수가 없다.
 
 set -uo pipefail
 
@@ -125,14 +128,16 @@ while IFS= read -r f; do
     done < <(grep -anE "$re" -- "$f" 2>/dev/null)
   done <<< "$PATTERNS"
 
-  # 이모지 소제목. BSD grep 에 -P 가 없어 perl 로 본다
+  # 이모지 소제목. BSD grep 에 -P 가 없어 perl 로 본다.
+  # 2B00-2BFF 를 넣은 것은 ⭐ (U+2B50) 이 2600-27BF 밖이라서다.
+  # 화살표(2190-21FF)는 넣지 않는다. 이 저장소가 → 를 산문에서 쓴다.
   [ "$have_perl" = 0 ] && continue
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     say "  $f:${line%%:*}  [이모지 소제목]"
     say "      $(echo "${line#*:}" | cut -c1-80)"
     hits=$((hits + 1))
-  done < <(perl -CSD -ne 'print "$.:$_" if /^#+ .*[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}]/' -- "$f" 2>/dev/null)
+  done < <(perl -CSD -ne 'print "$.:$_" if /^#+ .*[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE0F}]/' -- "$f" 2>/dev/null)
 done <<EOF_FILES
 $file_list
 EOF_FILES
