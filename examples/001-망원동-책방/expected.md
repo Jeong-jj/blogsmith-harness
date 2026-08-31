@@ -16,6 +16,12 @@
 산출      write 두 번. --platform naver 먼저, 그다음 --platform markdown
           두 번째는 1단계에서 `기존 것을 바탕으로 고칩니다` 를 고르고
           바꿀 것은 플랫폼뿐이라고 답했다
+
+**이 예시를 만들 때는 손으로 백업했다.** 재실행이 플랫폼을 안 가르던 때다.
+지금은 두 번째 플랫폼에서 `나란히 둡니다` 를 고르면
+`article.naver.md` 와 `article.markdown.md` 로 갈린다.
+여기 `output/naver/` `output/markdown/` 은 정본을 보기 좋게 나눈 것이고
+작업공간의 모양과 다르다.
 ```
 
 **`--style example` 을 명시해야 한다.** 작업공간 `defaultStyle` 이 다른 값일 수 있다.
