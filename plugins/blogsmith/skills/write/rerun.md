@@ -61,6 +61,30 @@ v 번호    시간 축.  같은 플랫폼을 다시 쓴 것
 **1번과 2번은 이전 산출물을 읽는다.** 둘 다 본문을 잇는 것이 목적이다.
 1번은 앞엣것을 남기고 2번은 그 자리에서 고친다.
 
+### 반쪽만 붙어 있으면 먼저 맞춘다
+
+접미사 규칙 전에 만든 산출물은 이렇게 섞여 있을 수 있다.
+
+```
+article.md          platform: markdown   접미사가 없다
+article.naver.md    platform: naver
+```
+
+**한쪽만 붙은 상태다.** 어느 것이 무엇인지 파일명으로 안 갈린다.
+
+묻기 전에 **접미사 없는 파일의 frontmatter 를 읽어 그 값으로 옮긴다.**
+`platform: markdown` 이면 `article.markdown.md` 다. 넷 다 같이 옮긴다.
+
+```
+전    article.md   article.naver.md
+후    article.markdown.md   article.naver.md
+```
+
+**추측하지 않는다.** frontmatter 에 `platform` 이 없으면 사용자에게 묻는다.
+그 파일이 어느 플랫폼 것인지는 우리가 알 수 없다.
+
+옮긴 뒤에 아래 규칙대로 묻는다.
+
 ### 이미 갈라져 있으면
 
 접미사가 붙은 산출물이 있는 상태에서 또 다른 플랫폼으로 쓰는 경우다.
