@@ -100,7 +100,7 @@ ${CLAUDE_SKILL_DIR}/../../scripts/find-workspace.sh "<--workspace 값, 없으면
 **없다고 멈추지 않는다.** 값을 정하고 무엇으로 봤는지 2단계 알림에 함께 적는다. 예시다.
 
 ```
-문체 test, 플랫폼 naver 로 씁니다.
+문체 casual-review, 플랫폼 naver 로 씁니다.
 imageMode 가 설정에 없어 filename 으로 봅니다. /blogsmith:update 로 채울 수 있습니다.
 ```
 

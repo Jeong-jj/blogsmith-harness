@@ -35,7 +35,7 @@ URL 은 도메인으로 걸러진다. **붙여넣기는 출처가 없어서 걸 
 **`_raw/<이름>/` 바로 아래 항목 하나가 글 하나다.**
 
 ```
-styles/_raw/houself/
+styles/_raw/casual-review/
   01.txt          첫 번째 글. 본문을 복사해 넣은 경우
   02/             두 번째 글. 캡처가 여러 장이라 폴더로 묶는다
     01.png
@@ -166,7 +166,7 @@ styles/_raw/houself/
 ```
 좋음   > 출처: 캡처 (배내골 편) 01.png
 좋음   > 출처: 붙여넣기 (배내골 편) 01.txt
-나쁨   > 출처: /Users/.../workspace/styles/_raw/test6/01.txt
+나쁨   > 출처: /Users/.../workspace/styles/_raw/casual-review/01.txt
 ```
 
 어느 글인지 알아볼 수 있게 짧게 적는다.
