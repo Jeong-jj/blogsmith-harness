@@ -15,6 +15,6 @@ Thumbs.db
 # Claude Code 로컬 설정
 .claude/settings.local.json
 
-# 개발용 스킬 (commit, pr). 원본은 .dev-log/skills/ 이고 여기는 심볼릭 링크다.
+# 개발용 스킬. 비공개 개발 일지 저장소에 원본이 있고 여기는 심볼릭 링크다.
 # 배포되는 플러그인이 아니라 이 저장소를 개발할 때 쓰는 절차다.
 .claude/skills
