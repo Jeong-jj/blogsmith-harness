@@ -4,7 +4,7 @@
 
 ```
 /blogsmith:learn-style https://blog.naver.com/example    문체를 분석해 규칙 문서로 저장
-/blogsmith:write 2026-08-성수동카페 --style casual        저장한 문체로 아티클 작성
+/blogsmith:write 2026-08-03 성수동 카페 --style casual-review   저장한 문체로 아티클 작성
 ```
 
 ## 왜 앱이 아니라 하네스인가
