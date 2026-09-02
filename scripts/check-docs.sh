@@ -169,7 +169,86 @@ if [ "$binary" -gt 0 ]; then
   fail=1
 fi
 
-# ── 2. plugin.json 의 version ───────────────────────────────
+# ── 2. 예시 이름 ────────────────────────────────────────────
+#
+# writing-style.md 의 `개발 흔적을 남기지 않는다` 를 기계가 볼 수 있는 만큼 본다.
+#
+# **유출만 잡는 것이 아니다.** 허용 목록 밖이면 표기가 안 맞는 것도 걸린다.
+# casual 처럼 새는 것이 아닌데 이름만 다른 자리가 그렇다. 그래서 이름이 `예시 이름` 이다.
+#
+# **금지 목록을 안 만든다.** 무엇이 개발 흔적인지 손으로 세면 학습할 때마다 늘어난다.
+# 허용 쪽을 저장소에서 읽어 만들고 형식이 고정된 자리만 본다.
+#
+#   허용 이름   casual-review 와 examples/*/style/style.md 의 name.  픽스처가 늘면 따라 는다
+#   무시 대상   .gitignore 를 읽는다. 무시 대상이 늘면 검사도 따라 는다
+#
+# 글감 이름은 문장 안에 그냥 나와서 못 잡는다. 사람이 본다.
+
+allow="casual-review"
+while IFS= read -r d; do
+  [ -z "$d" ] && continue
+  n=$(grep -m1 '^name:' "$d" 2>/dev/null | sed 's/^name: *//')
+  [ -n "$n" ] && allow="$allow|$n"
+done <<EOF_STYLES
+$(ls examples/*/style/style.md 2>/dev/null)
+EOF_STYLES
+
+# 규칙을 설명하는 파일은 그 규칙을 본문에 담아야 한다
+trace_skip() {
+  case "$1" in
+    scripts/check-docs.sh|.claude/rules/writing-style.md|.gitignore) return 0 ;;
+    plugins/blogsmith/skills/learn-style/raw.md) return 0 ;;
+  esac
+  return 1
+}
+
+trace=0
+EX="--exclude-dir=.git --exclude-dir=.dev-log --exclude-dir=workspace"
+
+# (1) gitignore 대상 안쪽 경로
+#     마지막 조각이 허용 이름이거나 자리 표시면 넘어간다
+while IFS= read -r pat; do
+  case "$pat" in ""|\#*) continue ;; esac
+  case "$pat" in */) d=${pat%/} ;; *) continue ;; esac
+  case "$d" in .*|workspace) ;; *) continue ;; esac
+  while IFS= read -r hit; do
+    [ -z "$hit" ] && continue
+    f=${hit%%:*}; rest=${hit#*:}; ln=${rest%%:*}; body=${rest#*:}
+    skip "$f" && continue
+    trace_skip "$f" && continue
+    case "$body" in *"<"*) continue ;; esac
+    leaf=$(printf '%s' "$body" | grep -oE "$d/[A-Za-z0-9_./-]+" | head -1 \
+           | sed -E "s|^$d/||; s|/\$||; s|.*/||; s|\\.md\$||")
+    printf '%s' "$leaf" | grep -qE "^($allow)\$" && continue
+    say "  $f:$ln  [$d 안쪽 경로]"
+    trace=$((trace + 1))
+  done < <(grep -rnE "$d/[A-Za-z0-9_.-]+[/.]" --include='*.md' --include='*.py' --include='*.sh' \
+             $EX . 2>/dev/null | sed 's|^\./||')
+done <<EOF_IGN
+$(cat .gitignore 2>/dev/null)
+EOF_IGN
+
+# (2) 문체 이름. --style X 와 `문체 X` 의 X
+while IFS= read -r hit; do
+  [ -z "$hit" ] && continue
+  f=${hit%%:*}; rest=${hit#*:}; ln=${rest%%:*}; body=${rest#*:}
+  skip "$f" && continue
+  trace_skip "$f" && continue
+  tail=$(printf '%s' "$body" | sed -E 's/.*(--style|문체) +`?//')
+  name=$(printf '%s' "$tail" | sed -E 's/[^A-Za-z0-9_-].*//')
+  [ -z "$name" ] && continue
+  # 경로면 문체 이름이 아니다. 문체  style/_raw/ 같은 표 칸
+  [ "$(printf '%s' "$tail" | cut -c$((${#name} + 1)))" = "/" ] && continue
+  printf '%s' "$name" | grep -qE "^($allow)\$" && continue
+  say "  $f:$ln  [문체 이름 $name]"
+  trace=$((trace + 1))
+done < <(grep -rnE '(--style|문체) +`?[A-Za-z][A-Za-z0-9_-]*' --include='*.md' \
+           $EX . 2>/dev/null | sed 's|^\./||')
+
+say "예시 이름 ${trace}건  (허용 문체 ${allow})"
+[ "$trace" -gt 0 ] && fail=1
+
+# ── 3. plugin.json 의 version ───────────────────────────────
 #
 # 빼면 모든 커밋이 사용자에게 전파된다. 있는지만 본다.
 n_pj=0
@@ -190,7 +269,7 @@ if [ "$n_pj" -eq 0 ]; then
   fail=1
 fi
 
-# ── 3. SKILL.md 500줄, CLAUDE.md 200줄 ──────────────────────
+# ── 4. SKILL.md 500줄, CLAUDE.md 200줄 ──────────────────────
 #
 # 두 규칙의 문구가 다르므로 경계도 다르다.
 #   SKILL.md   "500줄 미만"      500 은 위반

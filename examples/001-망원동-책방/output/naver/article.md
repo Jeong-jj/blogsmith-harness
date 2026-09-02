@@ -1,6 +1,6 @@
 ---
 source: 2026-09-12 망원동 책방
-style: example
+style: example-style
 platform: naver
 created: 2026-08-28
 ---

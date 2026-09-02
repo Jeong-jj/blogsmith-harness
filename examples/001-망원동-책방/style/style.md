@@ -1,11 +1,11 @@
 ---
-name: example
+name: example-style
 sources: 3
 platform: naver
 created: 2026-08-28
 ---
 
-# example
+# example-style
 
 다녀온 곳을 과장 없이 적어두는 짧은 후기체다. 해요체로 쓰다가 문단 안에서 합니다체를 한 문장씩 섞고,
 문장은 평균 23자로 짧으며 문단은 두세 문장에서 끊는다.

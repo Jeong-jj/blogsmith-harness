@@ -73,8 +73,13 @@ scripts/check-title.sh "<제목>"
 scripts/check-docs.sh
 ```
 
-`writing-style.md` 의 금지 표현, `plugin.json` 의 `version`,
+`writing-style.md` 의 금지 표현과 예시 이름, `plugin.json` 의 `version`,
 `SKILL.md` 500줄, `CLAUDE.md` 200줄을 본다.
+
+**예시 이름은 허용 목록으로 본다.** 금지 목록을 손으로 세면 학습할 때마다 늘어난다.
+허용은 `casual-review` 와 `examples/*/style/` 에서 읽고, 무시 대상은 `.gitignore` 에서 읽는다.
+**글감 이름은 문장 안에 그냥 나와서 못 잡는다.** 사람이 본다.
+
 **PR 체크리스트에는 사람만 판단할 수 있는 것만 두고 기계가 볼 것을 여기로 내렸다.**
 체크박스는 안 봐도 눌리기 때문이다.
 

@@ -24,10 +24,10 @@
 작업공간의 모양과 다르다.
 ```
 
-**`--style example` 을 명시해야 한다.** 작업공간 `defaultStyle` 이 다른 값일 수 있다.
+**`--style example-style` 을 명시해야 한다.** 작업공간 `defaultStyle` 이 다른 값일 수 있다.
 
 **원문이 두 곳에 있다.** 여기 `style/_raw/` 가 정본이고
-`workspace/styles/_raw/example/` 은 실행용 사본이다.
+`workspace/styles/_raw/example-style/` 은 실행용 사본이다.
 돌리기 전에 여기서 그쪽으로 복사한다. 반대로 하지 않는다.
 
 ## 기계가 재는 것
