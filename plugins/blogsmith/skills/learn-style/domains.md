@@ -15,12 +15,15 @@ User-Agent: blogsmith/0.1 (+https://github.com/Jeong-jj/blogsmith-harness)
 
 ## 현황
 
-| 플랫폼 | 본문 수집 | robots.txt |
-|---|---|---|
-| velog.io | 가능 | `User-agent: *` 만 있고 제한 없음 |
-| `*.tistory.com` | 가능 | 관리 페이지(`/manage` `/admin` `/search`)만 차단. 글 본문은 허용 |
-| blog.naver.com | 가능 | ClaudeBot 등 AI 크롤러를 이름으로 차단. 아래 참고 |
-| brunch.co.kr | 확인 필요 | ClaudeBot 등 AI 크롤러를 이름으로 차단 |
+| 플랫폼 | 본문 수집 | 목록 수집 | robots.txt |
+|---|---|---|---|
+| velog.io | 가능 | 가능 | `User-agent: *` 만 있고 제한 없음 |
+| `*.tistory.com` | 가능 | 가능 | 관리 페이지(`/manage` `/admin` `/search`)만 차단 |
+| blog.naver.com | 가능 | **불가** | AI 크롤러를 이름으로 차단. 목록은 아래 참고 |
+| brunch.co.kr | 확인 필요 | 확인 필요 | AI 크롤러를 이름으로 차단 |
+
+**목록 수집은 글 목록 페이지를 받는 것이다.** 본문 수집과 따로 잰다.
+`blogId` 만 주고 최근 글을 훑는 기능이 필요하면 여기를 본다.
 
 **현재 버전이 다루는 곳은 앞의 셋이다.** 브런치는 확인하지 않았고 추후 개발 예정이다.
 본문 수집과 실패 판정을 셋에서만 재봤으므로 다른 곳은 둘 다 보장하지 않는다.
@@ -99,6 +102,66 @@ velog 한 편   전 9묶음 10장   프로필 사진과 댓글 작성자 썸네�
 
 **티스토리 보호글이 제일 까다롭다.** 글 페이지 껍데기에 비밀번호 화면만 얹혀 오므로
 `og:type` 이 `article` 그대로다. 본문에 비밀번호 입력칸이 있는지로 따로 본다.
+
+## 네이버 목록은 못 받는다
+
+**2026-09-02 에 네 경로를 다 재봤다. 전부 막혔거나 못 쓴다.**
+
+```
+1  PostList.naver     robots.txt 의 User-agent: * 에 명시. 파생 경로도 전부
+2  RSS               rss.blog.naver.com 이 Disallow: /
+3  맨 blogId 주소       껍데기. 글 링크 0개
+4  검색 API            인증이 필요하고 특정 블로그 목록이 아니라 키워드 검색
+```
+
+### 1. 목록 경로가 전부 막혔다
+
+`blog.naver.com` 과 `m.blog.naver.com` 양쪽 `User-agent: *` 블록에 들어 있다.
+
+```
+PostList.nhn  PostList.naver  PostListAsyncTpl
+PostCategoryListAsync  PostSearchList  PopularPostListAsyncTpl
+```
+
+**본문(`/blogId/postId`)만 열려 있다.** 목록으로 가는 길은 없다.
+
+### 2. RSS 는 응답하지만 막혀 있다
+
+```
+rss.blog.naver.com/robots.txt
+  # Block everything for every crawler
+  User-agent: *
+  Disallow: /
+```
+
+**응답한다고 써도 되는 것이 아니다.**
+`받아주면 쓰고 막으면 물러난다` 는 방침에서, 여기는 **막는다고 적혀 있고 받아주는** 경우다.
+적힌 쪽을 따른다.
+
+### 3. 맨 주소는 껍데기다
+
+```
+blog.naver.com/<blogId>     2.8KB. iframe 으로 PostList.naver 를 부른다
+m.blog.naver.com/<blogId>   27KB. 링크가 PostList.naver 를 가리킨다
+글 링크                     둘 다 0개
+```
+
+### 4. 공식 API 가 이 용도가 아니다
+
+`openapi.naver.com` 의 블로그 검색은 **키워드로 찾는 것이지 특정 블로그의 글 목록이 아니다.**
+`Client ID` 도 필요한데 사용자가 앱을 등록해 키를 넣어야 한다.
+**하네스가 요구할 것이 아니다.**
+
+### 그래서 목록이 필요한 기능은 네이버에서 안 만든다
+
+자기 블로그의 지난 글을 훑어 시리즈 링크를 찾는 에이전트를 검토했다가 접었다.
+**주 플랫폼에서 자동이 안 되면 값이 크게 준다.**
+
+티스토리와 velog 는 열려 있지만 그 둘만 되는 기능은 안내가 복잡해지고,
+사용자가 제목을 붙여넣는 방식은 읽는 양이 작아 **서브에이전트를 띄울 조건을 못 넘는다.**
+
+**네이버가 목록을 열면 그때 다시 본다.**
+
 
 ## 네이버를 어떻게 볼 것인가
 
