@@ -28,6 +28,17 @@ workspace/                        dogfooding 작업장, gitignore
 | 부작용이 있는 절차 (init, write, publish) | `skills/` + `disable-model-invocation: true` |
 | 매번 예외 없이 실행돼야 하는 것 | `hooks/` |
 
+**에이전트는 성격 말고 조건이 둘 더 있다.**
+
+```
+읽을 수 있어야 한다     robots.txt 가 막으면 성격이 맞아도 못 만든다
+읽는 양이 커야 한다      제목 50줄이나 URL 두 개는 띄우는 값이 더 크다
+```
+
+**착수 전에 받아본다.** 2026-09 에 후보 셋 중 둘이 이것 때문에 접혔다.
+자기 지난 글 목록과 검색 결과가 둘 다 `Disallow` 였다.
+성격만 보고 설계까지 갔다가 되돌렸다. 근거는 `learn-style/domains.md` 에 있다.
+
 ## 지켜야 할 것
 
 - **이 파일을 늘리지 않는다.** 200줄이 상한이고 지금이 적정선이다.
