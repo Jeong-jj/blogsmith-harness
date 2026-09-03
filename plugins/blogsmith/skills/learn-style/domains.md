@@ -163,6 +163,34 @@ m.blog.naver.com/<blogId>   27KB. 링크가 PostList.naver 를 가리킨다
 **네이버가 목록을 열면 그때 다시 본다.**
 
 
+## 검색 결과는 어디서도 못 받는다
+
+**2026-09-02 에 다섯 곳을 쟀다.**
+
+```
+search.naver.com    User-agent: *  Disallow: /        전면 차단
+search.daum.net     User-agent: *  Disallow: /        전면 차단
+google.com          Disallow: /search
+bing.com            Disallow: /search
+duckduckgo.com      /lite 와 /html 만 차단
+```
+
+**네이버는 목록보다 더 강하게 막았다.** 목록은 특정 경로만이었는데 검색은 루트부터다.
+
+### 덕덕고가 열려 있어도 답이 아니다
+
+같은 주제의 상위 글이 무엇을 다뤘는지 보려던 것인데,
+**재려는 것은 네이버 순위다.** `naver-seo` 가 겨누는 것이 C-Rank 와 D.I.A.+ 다.
+
+다른 엔진 순위를 읽으면 **재려던 것을 안 재는 것이다.**
+
+### 그래서 검색이 필요한 기능은 안 만든다
+
+상위 글이 무엇을 다뤘는지 읽어 빠진 것을 찾는 에이전트를 검토했다가 접었다.
+
+사용자가 URL 을 주는 경로는 남지만, 그러면 **무엇이 상위인지는 사용자가 이미 찾은 것**이라
+그 기능의 핵심이 사라진다.
+
 ## 네이버를 어떻게 볼 것인가
 
 네이버 `robots.txt`에 이렇게 적혀 있다.
