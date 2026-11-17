@@ -14,7 +14,7 @@ plugins/blogsmith/                배포되는 플러그인
   hooks/hooks.json                훅
 examples/                         포폴용 쇼케이스, 회귀 테스트 픽스처
 workspace/                        dogfooding 작업장, gitignore
-.dev-log/                         비공개 개발 일지, gitignore
+.dev-log/                         비공개 개발 일지, gitignore. README 부터 읽는다
 ```
 
 ## 배치 규칙
