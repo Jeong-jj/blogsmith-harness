@@ -47,6 +47,7 @@ workspace/                        dogfooding 작업장, gitignore
 - `plugin.json`에 `version`을 반드시 유지한다. 빼면 모든 커밋이 사용자에게 전파된다.
 - SKILL.md 본문은 500줄 미만. 상세 내용은 같은 디렉토리의 별도 파일로 뺀다.
 - 문서 작성 규칙은 `.claude/rules/writing-style.md`에 있다. em dash를 쓰지 않는다.
+- 커밋 메시지와 PR 본문은 평서형과 명사형으로 쓴다. 구어체 존댓말을 쓰지 않는다.
 - 커밋 메시지에 AI 공동저자 트레일러를 넣지 않는다.
 
 ## 커밋과 PR
