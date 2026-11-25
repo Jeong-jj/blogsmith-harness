@@ -437,6 +437,22 @@ python3 "${CLAUDE_SKILL_DIR}/../natural-voice/scripts/audit.py" "<작업공간>/
 `예전에 이슈였던 게 생각나서 찾아갔다` 처럼 무엇을 가리키는지 안 밝힌 도입이
 `audit.py` 의 구체성 검사를 통과한다. 짧은 덩어리는 검사 대상에서 빠지기 때문이다.
 
+### 여섯째 항목은 쓴 쪽이 판정하지 않는다
+
+`경험 서술이 소스에 근거하는가` 만 `source-checker` 에 맡긴다.
+`audit.py` 를 끝낸 뒤 띄운다. 그 수정이 넣은 서술까지 검사 안에 들어온다.
+
+**쓴 쪽은 자기 의도를 기준으로 센다.** 두 판이 없는 서술을 통과시킨 자리다.
+
+```
+넘기는 것     notes.md 와 article.md 의 절대 경로, 사진에서 읽은 값
+안 넘기는 것   문체 문서, 지식 스킬, 아웃라인
+고치는 법     지우거나 소스 값으로 바꾼다. 새 서술을 지어 메우지 않는다
+적는 곳       여섯째 줄에 건수만. 사용자가 할 일은 `못 지킨 것` 에
+```
+
+절차는 [source-check.md](source-check.md) 에 있다.
+
 ## 9. 산출물
 
 `<작업공간>/output/<글감 폴더>/` 에 넷을 만든다. 폴더 이름은 소스와 같게 한다.
@@ -478,4 +494,5 @@ review.md     audit 결과, 검색 노출 체크, 못 지킨 것
 - 산출물 형식: [outputs.md](outputs.md)
 - 재실행 절차: [rerun.md](rerun.md)
 - 사진 다루기: [photos.md](photos.md)
+- 소스 대조: [source-check.md](source-check.md)
 - 문체 문서 형식: [../learn-style/schema.md](../learn-style/schema.md)
